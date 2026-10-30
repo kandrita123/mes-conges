@@ -189,7 +189,7 @@ const C = {
   FL:{name:"Fête locale",short:"FL",c:"--fl",cs:"--fl-soft",u:"j"}
 };
 const KEYS = Object.keys(C);
-const KIND = {absence:"Absence", cet:"Versement CET", credit:"Acquisition"};
+const KIND = {absence:"Absence", cet:"Versement CET", credit:"Acquisition", perte:"Écrêtement"};
 const MOM = {jour:"Journée", am:"Matin", pm:"Après-midi", heures:"Heures"};
 // Horaires de référence : 7h45-12h et 12h45-16h30
 const toMin = t => { const [h,mi] = String(t||"0:0").split(":").map(Number); return h*60+(mi||0); };
@@ -278,7 +278,21 @@ function droitsMvts(){
     out.push({id:`dr-${k}-${y}`, date:`${y}-${DROIT_DATE[k]}`, c:k, h:d[k], kind:"credit", note:`Droits ${y} (automatique)`, virt:true});
   return out;
 }
-const allM = incH => state.mouvements.filter(m => incH || m.statut!=="hypo").concat(solMvts(), droitsMvts());
+const baseM = incH => state.mouvements.filter(m => incH || m.statut!=="hypo").concat(solMvts(), droitsMvts());
+const allM = incH => baseM(incH).concat(ecretMvts());
+// Écrêtement prévisionnel au 1er janvier : CA au-delà de 70 h perdus, RC au-delà de 100 h écrêtées
+let _ecret = null;
+function ecretMvts(){
+  if (_ecret) return _ecret;
+  const out = []; _ecret = out;
+  const ys = state.mouvements.map(m=>+m.date.slice(0,4));
+  const maxY = Math.max(new Date().getFullYear(), ...ys);
+  for (let y=2026; y<=maxY; y++) for (const [k,cap] of [["CA",capCA()],["RC",capRC()]]){
+    const v = soldeAt(k, `${y}-12-31`);
+    if (v!==null && v > cap + 0.009) out.push({id:`ec-${k}-${y}`, date:`${y+1}-01-01`, c:k, h:Math.round((v-cap)*100)/100, kind:"perte", note:`Écrêtement au-delà de ${cap} h (perdu)`, virt:true});
+  }
+  return out;
+}
 
 function lastReleve(before){
   const r = state.releves.filter(x => !before || x.date < before).sort((a,b)=>a.date.localeCompare(b.date));
@@ -294,11 +308,18 @@ function delta(k, from, to){ // effet du réel dans (from, to] — jamais les hy
   }
   return d;
 }
-function soldeAt(k, end){
-  const r = state.releves.filter(x => x.date <= end).sort((a,b)=>a.date.localeCompare(b.date)).pop();
-  if (!r) return null;
-  let v = num(r.soldes[k]);
-  for (const m of allM(true)){ if (m.c!==k || m.date<=r.date || m.date>end) continue; v += m.kind==="credit" ? m.h : -m.h; }
+function anchor(k, end, strict, skipRel){
+  let best = null;
+  const take = (date, v) => { if (strict ? date >= end : date > end) return; if (!best || date > best.date) best = {date, v}; };
+  for (const r of state.releves) if (r.soldes && r.soldes[k]!==undefined) take(r.date, num(r.soldes[k]));
+  if (!skipRel && (k==="CA" || k==="RC")) for (const rl of Object.values(state.reliquats||{})) if (rl && rl[k]!=null && rl.date) take(rl.date, num(rl[k]));
+  return best;
+}
+function soldeAt(k, end, skipRel){
+  const a = anchor(k, end, false, skipRel);
+  if (!a) return null;
+  let v = a.v;
+  for (const m of allM(true)){ if (m.c!==k || m.date<=a.date || m.date>end) continue; v += m.kind==="credit" ? m.h : -m.h; }
   return v;
 }
 function yearsList(){
@@ -450,39 +471,77 @@ function openAst(a, isNew){
 }
 
 // --- Bilan annuel / droits ---
+function caSplit(y){
+  // Reliquat = solde CA au 1er janvier ; les CA posés avant le 1er mai le consomment en premier
+  const rl = (state.reliquats||{})[y];
+  const rel = rl && rl.CA!=null ? num(rl.CA) : (soldeAt("CA", `${y}-01-01`) ?? 0);
+  let pJA=0, hJA=0, pMD=0, hMD=0;
+  for (const m of allM(true)){
+    if (m.c!=="CA" || m.kind==="credit" || m.kind==="perte" || m.date<`${y}-01-01` || m.date>`${y}-12-31`) continue;
+    const early = m.date < `${y}-05-01`;
+    if (m.statut==="hypo"){ if (early) hJA += m.h; else hMD += m.h; }
+    else { if (early) pJA += m.h; else pMD += m.h; }
+  }
+  const relPos = Math.max(0, rel);
+  const nP = Math.min(pJA, relPos), nH = Math.min(hJA, relPos - nP);
+  return {rel, nP, nH, restN1: relPos - nP - nH, overP: pJA - nP, overH: hJA - nH, pMD, hMD};
+}
 function renderBilan(y){
   const d = droits();
-  const per = k => k==="CA" ? [`${y}-05-01`, `${y+1}-04-30`] : [`${y}-01-01`, `${y}-12-31`];
-  const rows = KEYS.map(k=>{
-    const [a,b] = per(k);
+  const chip = (k, t) => `<span class="chip" style="${colorVars(k)};min-width:0;padding:2px 6px">${t}</span>`;
+  const cell = v => v===null ? "–" : fmt(v);
+  const row = (lab, dr, p, h, r) => `<tr><td>${lab}</td><td>${dr}</td><td>${fmt(p)}</td><td>${h?fmt(h):"–"}</td>
+      <td class="${r!==null&&r<-0.009?"bad":""}" style="font-weight:700">${cell(r)}</td></tr>`;
+  const ca = caSplit(y);
+  let rows = "";
+  for (const k of KEYS){
+    if (k==="CA"){
+      rows += row(chip("CA",`CA ${y-1}`), fmt(ca.rel), ca.nP, ca.nH, ca.restN1);
+      const resteCA = soldeAt("CA", `${y}-12-31`);
+      const drCA = ca.restN1 > 0.009 ? `${fmt(d.CA)}<div class="n" style="font-size:.72rem;color:var(--muted)">+ ${fmt(ca.restN1)} N-1</div>` : fmt(d.CA);
+      rows += row(chip("CA",`CA ${y}`), drCA, ca.pMD + ca.overP, ca.hMD + ca.overH, resteCA ?? (d.CA + ca.restN1 - ca.pMD - ca.overP - ca.hMD - ca.overH));
+      continue;
+    }
+    const [a,b] = [`${y}-01-01`, `${y}-12-31`];
     let pose = 0, hypo = 0;
     for (const m of allM(true)){
-      if (m.c!==k || m.kind==="credit" || m.date<a || m.date>b) continue;
+      if (m.c!==k || m.kind==="credit" || m.kind==="perte" || m.date<a || m.date>b) continue;
       if (m.statut==="hypo") hypo += m.h; else pose += m.h;
     }
-    // CA : reliquat de la période précédente (solde au 30/04) + droits ; reste = solde prévu au 30/04 suivant
-    const rel = k==="CA" ? (soldeAt("CA", `${y}-04-30`) ?? 0) : 0;
-    const reste = k==="RC" ? soldeAt("RC", `${y}-12-31`)
-      : k==="CA" ? (soldeAt("CA", `${y+1}-04-30`) ?? d.CA + rel - pose - hypo)
-      : d[k] - pose - hypo;
-    const drCell = k==="RC" ? "–" : k==="CA" && Math.abs(rel)>=0.01 ? `${fmt(d.CA)}<div class="n" style="font-size:.72rem;color:var(--muted)">+ ${fmt(rel)} reliquat</div>` : fmt(d[k]);
-    return `<tr><td><span class="chip" style="${colorVars(k)};min-width:0;padding:2px 6px">${C[k].short}</span></td>
-      <td>${drCell}</td><td>${fmt(pose)}</td><td>${hypo?fmt(hypo):"–"}</td>
-      <td class="${reste!==null&&reste<0?"bad":""}" style="font-weight:700">${reste===null?"–":fmt(reste)}</td></tr>`;
-  }).join("");
+    const reste = k==="RC" ? soldeAt("RC", b) : d[k] - pose - hypo;
+    rows += row(chip(k, C[k].short), k==="RC" ? "–" : fmt(d[k]), pose, hypo, reste);
+  }
+  const warns = [];
+  const fin = `${y}-04-30`;
+  if (ca.restN1 > 0.009) warns.push(today() > fin
+    ? `<p class="warn" style="margin:8px 0 0">${fmt(ca.restN1)} h de CA ${y-1} n’ont pas été posées avant le 30/04/${y}.</p>`
+    : `<p class="warn" style="margin:8px 0 0;color:#B26A00">Reliquat CA ${y-1} : ${fmt(ca.restN1)} h restent à poser avant le 30/04/${y}.</p>`);
+  else if (ca.rel > 0.009) warns.push(`<p class="hint" style="margin:8px 0 0">Reliquat CA ${y-1} entièrement posé avant le 30/04/${y}.</p>`);
+  if (ca.overP + ca.overH > 0.009) warns.push(`<p class="warn" style="margin:8px 0 0">${fmt(ca.overP + ca.overH)} h de CA posées avant le 1er mai dépassent le reliquat : elles seront prises sur les CA ${y}, qui n’arrivent que le 1er mai (solde négatif dans PGI d’ici là).</p>`);
   return `<div class="card" style="padding:12px 14px;margin:8px 0">
     <table class="cmp" style="margin-top:0"><thead><tr><th>Bilan ${y}</th><th>Droits</th><th>Posé</th><th>Hypo.</th><th>Reste</th></tr></thead><tbody>${rows}</tbody></table>
+    ${warns.join("")}
     ${caCapLine(y)}
-    <p class="hint">Posé inclut le CET. CA : du 1er mai ${y} au 30 avril ${y+1}, reliquat de la période précédente compris. RC : reste = solde prévu au 31/12 (pas de droit fixe). FL en jours.</p>
+    ${rcCapLine(y)}
+    <p class="hint">CA ${y-1} = reliquat au 1er janvier, consommé en premier par les CA posés avant le 1er mai. CA ${y} = droits crédités le 1er mai ; son reste est le reliquat prévu au 31/12. Posé inclut le CET. RC : reste = solde prévu au 31/12. FL en jours.</p>
     <button class="toggle" id="editDroits">Régler les droits annuels</button></div>`;
 }
 const capCA = () => state.capCA ?? 70;
+const capRC = () => state.capRC ?? 100;
+function rcCapLine(y){
+  const v = soldeAt("RC", `${y}-12-31`);
+  if (v===null) return "";
+  const cap = capRC(), over = v - cap;
+  return over > 0.009
+    ? `<p class="warn" style="margin:8px 0 0">RC prévues au 31/12/${y} : ${fmt(v)} h. Au-delà de ${fmt(cap)} h elles sont écrêtées : placez au moins ${fmt(over)} h au CET avant le 31/12 (bouton +, Versement CET, RC).</p>`
+    : `<p class="hint" style="margin:4px 0 0">RC prévues au 31/12/${y} : <b>${fmt(v)} h</b> (écrêtement au-delà de ${fmt(cap)} h).</p>`;
+}
 function caCapLine(y){
   const v = soldeAt("CA", `${y}-12-31`);
   if (v===null) return "";
   const cap = capCA(), over = v - cap;
   return over > 0.009
-    ? `<p class="warn" style="margin:8px 0 0">Reliquat CA prévu au 31/12/${y} : ${fmt(v)} h, soit ${fmt(over)} h au-delà du maximum de ${fmt(cap)} h. À poser ou à verser au CET avant le 31/12.</p>`
+    ? `<p class="warn" style="margin:8px 0 0">Reliquat CA prévu au 31/12/${y} : ${fmt(v)} h, soit ${fmt(over)} h au-delà du maximum de ${fmt(cap)} h, qui seront perdues. À poser ou à verser au CET avant le 31/12.</p>`
     : `<p class="hint" style="margin:8px 0 0">Reliquat CA prévu au 31/12/${y} : <b>${fmt(v)} h</b> (maximum ${fmt(cap)} h).</p>`;
 }
 function openDroits(){
@@ -493,9 +552,10 @@ function openDroits(){
     <label for="dCA">CA : heures au 1er mai</label><input id="dCA" inputmode="decimal" value="${fmt(d.CA)}">
     <label for="dFL">FL : jours au 1er janvier</label><input id="dFL" inputmode="decimal" value="${fmt(d.FL)}">
     <label for="dCap">CA : reliquat maximum gardé au 31/12 (h)</label><input id="dCap" inputmode="decimal" value="${fmt(capCA())}">
+    <label for="dCapRC">RC : maximum avant écrêtement au 31/12 (h)</label><input id="dCapRC" inputmode="decimal" value="${fmt(capRC())}">
     <div class="actions"><button type="button" class="btn ghost" id="drCancel">Annuler</button><button type="button" class="btn" id="drOk">Enregistrer</button></div>`;
   $("#drCancel").onclick=()=>$("#dlg").close();
-  $("#drOk").onclick=()=>{ state.droits = {RTT:num($("#dRTT").value), CA:num($("#dCA").value), FL:num($("#dFL").value)}; state.capCA = num($("#dCap").value); save(); $("#dlg").close(); render(); };
+  $("#drOk").onclick=()=>{ state.droits = {RTT:num($("#dRTT").value), CA:num($("#dCA").value), FL:num($("#dFL").value)}; state.capCA = num($("#dCap").value); state.capRC = num($("#dCapRC").value); save(); $("#dlg").close(); render(); };
   $("#dlg").showModal();
 }
 
@@ -592,6 +652,28 @@ function renderAide(){
 <li>Onglet <b>Réglages</b> : <b>Exporter une sauvegarde</b> et rangez-la dans Fichiers / iCloud.</li>
 </ol></details>
 
+<details><summary>Reliquats et plafonds (début janvier, fin décembre)</summary>
+<h3>Le 2 janvier : saisir le reliquat</h3>
+<ol>
+<li>Dans PGI, regardez les soldes CA et RC après le passage d’année.</li>
+<li>Onglet <b>PGI</b>, choisissez la nouvelle année en haut, encart « Reliquat N-1 → N » : saisissez le CA et le total des 4 RC, puis « Enregistrer le reliquat ».</li>
+<li>Le champ vide montre ce que l’appli prévoyait : si votre chiffre est différent, il y a un écart à comprendre.</li>
+<li>Les relevés suivants de l’année se font normalement, dans le même onglet.</li>
+</ol>
+<h3>Les règles</h3>
+<ul>
+<li><b>CA</b> : au plus 70 h passent d’une année sur l’autre, le reste est <b>perdu</b>. Les CA posés de janvier à avril sont pris d’abord sur ce reliquat (ligne « CA N-1 » du bilan) ; il doit être posé avant le 30 avril. Les nouveaux CA arrivent le 1er mai.</li>
+<li><b>RC</b> : écrêtées à 100 h au 31/12. Si le bilan annonce plus de 100 h, placez au moins l’excédent au CET avant la fin de l’année : bouton +, <i>Versement CET</i>, compteur RC, date 31/12.</li>
+<li>L’appli retire d’elle-même, dans ses prévisions, ce qui dépasserait ces plafonds (ligne « Écrêtement » dans la Liste au 1er janvier).</li>
+</ul>
+<h3>Lire le bilan</h3>
+<ul>
+<li><b>CA N-1</b> : reliquat au 1er janvier, CA posés avant le 1er mai, reste à poser avant le 30 avril (alerte orange tant qu’il en reste).</li>
+<li><b>CA de l’année</b> : droits du 1er mai, posés après le 1er mai et CET ; « Reste » = reliquat prévu au 31/12 (alerte rouge au-delà de 70 h).</li>
+<li><b>RD, FL</b> : droits de l’année − posé − hypothèses.</li>
+<li><b>RC</b> : « Reste » = solde prévu au 31/12 (alerte rouge au-delà de 100 h).</li>
+</ul></details>
+
 <details><summary>Poser un congé ou une hypothèse</summary>
 <ol>
 <li>Onglet <b>Calendrier</b> : touchez le jour, puis « Poser ce jour » (ou bouton <b>+</b>).</li>
@@ -628,7 +710,7 @@ function renderAide(){
 <ul>
 <li><b>PGI</b> ne déduit une absence qu’une fois la date passée ; l’appli la déduit dès qu’elle est posée. Le solde PGI « à la date du » inclut ce jour-là.</li>
 <li><b>Contrôle</b> : attendu = relevé précédent − absences posées + acquisitions entre les deux dates. Les hypothèses ne comptent jamais.</li>
-<li><b>Bilan</b> : Droits − Posé (CET compris) − Hypothèses = Reste. CA sur la période 1er mai → 30 avril, avec le reliquat de la période précédente ajouté aux droits. Le reliquat CA prévu au 31/12 est comparé au maximum (70 h, modifiable dans Réglages) : au-delà, alerte. RC : pas de droit fixe, « Reste » = solde prévu au 31/12. FL en jours.</li>
+<li><b>Bilan</b> : Droits − Posé (CET compris) − Hypothèses = Reste. Le CA a deux lignes : <b>CA N-1</b> (reliquat au 1er janvier, à poser avant le 30/04 ; les CA posés de janvier à avril s’y imputent d’abord) et <b>CA de l’année</b> (droits crédités le 1er mai). Plafonds (modifiables dans Réglages) : 70 h de CA reportés, 100 h de RC. RC : pas de droit fixe, « Reste » = solde prévu au 31/12. FL en jours.</li>
 <li><b>Astreinte</b> : une absence pendant une astreinte est signalée « pdt astreinte » (sauf le jeudi de début, l’astreinte commençant à 17 h).</li>
 <li><b>Couleurs</b> : ${k("CA","CA")} ${k("RTT","RD")} ${k("RC","RC")} ${k("FL","FL")} ; hachuré = hypothèse ; liseré bleu = vacances ; barre rouge = astreinte ; date en jaune = férié.</li>
 </ul></details>
@@ -660,6 +742,28 @@ function renderAide(){
 </div>`;
 }
 
+// --- Reliquat N-1 (début janvier) ---
+function renderRel(){
+  const y = calYear, rl = (state.reliquats||{})[y] || {};
+  const date = rl.date || `${y}-01-02`;
+  const prevCA = soldeAt("CA", date, true), prevRC = soldeAt("RC", date, true);
+  const pr = (v, cap) => v===null ? "" : `prévu ${fmt(Math.min(v, cap))} h`;
+  return `<div class="card" style="margin:4px 0 14px">
+    <strong>Reliquat ${y-1} → ${y}</strong>
+    <p class="hint" style="margin:4px 0 0">Une fois par an, début janvier (le 2) : recopiez les soldes CA et RC que PGI affiche après le passage d’année. Les autres relevés se font normalement ci-dessous.</p>
+    <div class="row">
+      <div><label for="relCA">CA ${y-1} (h)</label><input id="relCA" inputmode="decimal" value="${rl.CA!=null?fmt(rl.CA):""}" placeholder="${pr(prevCA, capCA())}"></div>
+      <div><label for="relRC">RC, total des 4 (h)</label><input id="relRC" inputmode="decimal" value="${rl.RC!=null?fmt(rl.RC):""}" placeholder="${pr(prevRC, capRC())}"></div>
+    </div>
+    <label for="relD">Date du relevé</label><input type="date" id="relD" value="${date}">
+    <p class="hint">Le champ vide indique ce que l’appli prévoyait (après plafond de ${fmt(capCA())} h pour les CA et écrêtement à ${fmt(capRC())} h pour les RC).</p>
+    <div class="actions" style="margin-top:10px">
+      ${rl.date ? `<button type="button" class="btn danger" id="relDel">Effacer</button>` : ""}
+      <button type="button" class="btn" id="relSave">Enregistrer le reliquat</button>
+    </div>
+  </div>`;
+}
+
 // --- Relevé / historique ---
 const RCT = [["ast","Astreinte"],["obl","Obligatoire"],["hs150","HS 150 %"],["hs175","HS 175 %"]];
 function rv(k){
@@ -683,30 +787,30 @@ function renderReleve(){
 }
 function releveCompare(){
   const date = $("#rdate").value;
-  const prev = lastReleve(date);
   const box = $("#rcmp");
-  if (!prev){ box.innerHTML = `<p class="hint">Premier relevé : pas de comparaison possible.</p>`; return; }
+  if (!KEYS.some(k=>anchor(k, date, true))){ box.innerHTML = `<p class="hint">Premier relevé : pas de comparaison possible.</p>`; return; }
   let rows = "";
   for (const k of KEYS){
     const v = rv(k);
     if (k==="RC"){ const sm = $("#rcSum"); if (sm) sm.textContent = v==="" ? "" : `Total RC : ${fmt(num(v))} h`; }
-    const exp = num(prev.soldes[k]) + delta(k, prev.date, date);
+    const pa = anchor(k, date, true);
+    const exp = pa ? pa.v + delta(k, pa.date, date) : null;
     const got = v === "" ? null : num(v);
-    const e = got === null ? null : got - exp;
-    rows += `<tr><td>${C[k].short}</td><td>${fmt(exp)}</td><td>${got===null?"–":fmt(got)}</td>
+    const e = got === null || exp === null ? null : got - exp;
+    rows += `<tr><td>${C[k].short}</td><td>${exp===null?"–":fmt(exp)}</td><td>${got===null?"–":fmt(got)}</td>
       <td class="${e===null?"":Math.abs(e)<0.01?"good":"bad"}">${e===null?"":Math.abs(e)<0.01?"OK":(e>0?"+":"")+fmt(e)}</td></tr>`;
   }
   box.innerHTML = `<table class="cmp"><thead><tr><th></th><th>Attendu</th><th>PGI</th><th>Écart</th></tr></thead><tbody>${rows}</tbody></table>
-  <p class="hint">Attendu = relevé du ${fdate(prev.date)} ± ce que vous avez posé entre les deux dates. Un écart signale un posé oublié d’un côté ou de l’autre, ou des heures acquises non saisies (RC d’astreinte par exemple).</p>`;
+  <p class="hint">Attendu = dernier relevé (ou reliquat) ± ce que vous avez posé depuis. Un écart signale un posé oublié d’un côté ou de l’autre, ou des heures acquises non saisies (RC d’astreinte par exemple).</p>`;
 }
 function renderHist(){
   const rs = state.releves.filter(r=>r.date.slice(0,4)===String(calYear)).sort((a,b)=>b.date.localeCompare(a.date));
   if (!rs.length) return `<div class="empty">Aucun relevé en ${calYear}.</div>`;
   return `<div class="hist">` + rs.map(r=>{
-    const prev = lastReleve(r.date);
     const cells = KEYS.map(k=>{
       let e = "";
-      if (prev){ const d = num(r.soldes[k]) - (num(prev.soldes[k]) + delta(k, prev.date, r.date));
+      const pa = anchor(k, r.date, true);
+      if (pa){ const d = num(r.soldes[k]) - (pa.v + delta(k, pa.date, r.date));
         e = Math.abs(d)<0.01 ? `<span class="good">OK</span>` : `<span class="bad">${d>0?"+":""}${fmt(d)}</span>`; }
       const det = k==="RC" && r.soldes.RCd ? `<div class="n" style="font-size:.75rem;color:var(--muted)">${RCT.map(([t,l])=>`${l} ${fmt(r.soldes.RCd[t]||0)}`).join(", ")}</div>` : "";
       return `<tr><td>${C[k].name}${det}</td><td>${fmt(num(r.soldes[k]))} ${C[k].u}</td><td>${e}</td></tr>`;
@@ -774,7 +878,7 @@ function openForm(m, date){
     const abs = m.kind==="absence";
     f.innerHTML = `<h2>${isNew?"Ajouter":"Modifier"}</h2>
       <label>Type</label>
-      <div class="seg" id="fkind">${Object.entries(KIND).map(([k,l])=>`<button type="button" data-v="${k}" aria-pressed="${m.kind===k}">${l}</button>`).join("")}</div>
+      <div class="seg" id="fkind">${Object.entries(KIND).filter(([k])=>k!=="perte").map(([k,l])=>`<button type="button" data-v="${k}" aria-pressed="${m.kind===k}">${l}</button>`).join("")}</div>
       <label>Compteur</label>
       <div class="seg" id="fc">${KEYS.map(k=>`<button type="button" data-v="${k}" aria-pressed="${m.c===k}" style="${colorVars(k)}">${C[k].short}</button>`).join("")}</div>
       ${abs ? `<label>Statut</label>
@@ -828,6 +932,7 @@ function openForm(m, date){
 }
 
 function render(){
+  _ecret = null;
   renderTop();
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===tab));
   $("#fab").style.display = (tab==="plan"||tab==="annee") ? "" : "none";
@@ -838,6 +943,7 @@ function render(){
     v.querySelectorAll(".item[data-id]").forEach(b=>b.onclick=()=>{ const id=b.dataset.id;
       if (id.startsWith("sol-")) return openSol(id.slice(4));
       if (id.startsWith("dr-")) return openDroits();
+      if (id.startsWith("ec-")) return;
       openForm(state.mouvements.find(m=>m.id===id)); });
   } else if (tab==="annee"){
     v.innerHTML = renderAnnee();
@@ -868,11 +974,14 @@ function render(){
     v.querySelectorAll("[data-delv]").forEach(b=>b.onclick=()=>{ if (!confirm("Supprimer cette période ?")) return;
       state.vacances = state.vacances.filter(x=>x.id!==b.dataset.delv); save(); render(); });
   } else {
-    v.innerHTML = renderReleve() + `<div class="month">Historique ${calYear}</div>` + renderHist();
+    v.innerHTML = renderRel() + renderReleve() + `<div class="month">Historique ${calYear}</div>` + renderHist();
+    $("#relSave").onclick = () => { const ca=$("#relCA").value, rc=$("#relRC").value, dt=$("#relD").value; if (!dt || (ca==="" && rc==="")) return;
+      state.reliquats = {...(state.reliquats||{}), [calYear]: {date:dt, ...(ca!==""?{CA:num(ca)}:{}), ...(rc!==""?{RC:num(rc)}:{})}}; save(); render(); };
+    const rd = $("#relDel"); if (rd) rd.onclick = () => { const o = {...state.reliquats}; delete o[calYear]; state.reliquats = o; save(); render(); };
     v.querySelectorAll("[data-delr]").forEach(b=>b.onclick=()=>{
       if (!confirm("Supprimer ce relevé ?")) return;
       state.releves = state.releves.filter(r=>r.date!==b.dataset.delr); save(); render();});
-    v.querySelectorAll("input").forEach(i=>i.oninput=releveCompare); releveCompare();
+    v.querySelectorAll(".card input").forEach(i=>{ if (!i.id.startsWith("rel")) i.oninput=releveCompare; }); releveCompare();
     $("#rsave").onclick = () => {
       const date = $("#rdate").value; if (!date) return;
       const soldes = {}; let any = false;
@@ -897,7 +1006,7 @@ function statusText(){
 }
 const normalize = d => ({releves:d.releves||[], mouvements:d.mouvements||[], solidarite:d.solidarite||{}, astreintes:d.astreintes||[],
   vacances: (d.vacances && d.vacances.length) ? d.vacances : DEFAULT_VAC.map(v=>({...v, id:uid()})),
-  ...(d.droits?{droits:d.droits}:{}), ...(d.capCA!=null?{capCA:d.capCA}:{}), ...(d.lastExport?{lastExport:d.lastExport}:{})});
+  ...(d.droits?{droits:d.droits}:{}), ...(d.capCA!=null?{capCA:d.capCA}:{}), ...(d.capRC!=null?{capRC:d.capRC}:{}), reliquats: d.reliquats||{}, ...(d.lastExport?{lastExport:d.lastExport}:{})});
 
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
 $("#fab").onclick=()=>openForm(null);
