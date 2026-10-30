@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PGI suivi perso</title>
+<meta name="theme-color" content="#7030A0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PGI suivi perso">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --ink:#18202E; --muted:#5D6779; --line:#D5DBE5;
+  --ca:#B04FB3; --ca-soft:#F4DDF4; --rtt:#5A2D9C; --rtt-soft:#E3DAF3;
+  --rc:#1690A3; --rc-soft:#D4F0F4; --ri:#B9770E; --ri-soft:#F7E8CC;
+  --neg:#C62828; --neg-soft:#FBE1E1; --ok:#2E7D32; --accent:#1F4FA8;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121722; --surface:#1C2331; --ink:#E8ECF3; --muted:#9AA4B6; --line:#2E3747;
+    --ca:#E08AE3; --ca-soft:#3E2441; --rtt:#B39AEE; --rtt-soft:#2E2647;
+    --rc:#5FCFE0; --rc-soft:#173B42; --ri:#F0B44E; --ri-soft:#3E3018;
+    --neg:#FF7B7B; --neg-soft:#47201F; --ok:#7BD07F; --accent:#8EB4FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121722; --surface:#1C2331; --ink:#E8ECF3; --muted:#9AA4B6; --line:#2E3747;
+  --ca:#E08AE3; --ca-soft:#3E2441; --rtt:#B39AEE; --rtt-soft:#2E2647;
+  --rc:#5FCFE0; --rc-soft:#173B42; --ri:#F0B44E; --ri-soft:#3E3018;
+  --neg:#FF7B7B; --neg-soft:#47201F; --ok:#7BD07F; --accent:#8EB4FF;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 96px}
+header h1{font-size:1.6rem;margin:4px 0 2px;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);font-size:.92rem}
+.counters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 8px}
+.ctr{background:var(--surface);border-radius:14px;padding:12px 14px 12px 16px;position:relative;overflow:hidden}
+.ctr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c)}
+.ctr .name{font-weight:700;font-size:.95rem}
+.ctr .big{font-size:2rem;font-weight:700;line-height:1.1;margin:4px 0 6px}
+.ctr .big small{font-size:1rem;font-weight:400;color:var(--muted)}
+.ctr.neg{background:var(--neg-soft)}
+.ctr.neg .big{color:var(--neg)}
+.ctr .calc{font-size:.8rem;color:var(--muted);line-height:1.35}
+.tabs{display:flex;gap:6px;margin:20px 0 12px;background:var(--surface);padding:4px;border-radius:12px}
+.tabs button{flex:1;min-width:0;border:0;background:none;padding:10px 1px;border-radius:9px;font:inherit;font-size:.72rem;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff;font-weight:700}
+:root[data-theme="dark"] .tabs button[aria-selected="true"]{color:#0E1525}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tabs button[aria-selected="true"]{color:#0E1525}}
+.month{font-weight:700;margin:18px 0 6px;font-size:.95rem;text-transform:capitalize}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:6px;width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.item.past{opacity:.55}
+.chip{flex:0 0 auto;min-width:56px;text-align:center;font-weight:700;font-size:.85rem;padding:5px 8px;border-radius:8px;background:var(--cs);color:var(--ct,var(--c))}
+.item .main{flex:1;min-width:0}
+.item .d{font-weight:700}
+.item .n{font-size:.82rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:.75rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin-left:6px;font-weight:400}
+.empty{color:var(--muted);text-align:center;padding:28px 12px}
+.card{background:var(--surface);border-radius:14px;padding:16px}
+label{display:block;font-size:.88rem;font-weight:700;margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:60px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px 6px;font:inherit;font-size:.88rem;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--c,var(--accent));background:var(--cs,var(--accent));color:var(--ct,#fff);font-weight:700}
+.btn{display:inline-block;border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn{color:#0E1525}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#0E1525}}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:none;color:var(--neg);border:1px solid var(--neg)}
+.btn.wide{width:100%;margin-top:16px}
+.actions{display:flex;gap:8px;margin-top:18px}
+.actions .btn{flex:1}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;font-size:1.8rem;line-height:1;padding:0;box-shadow:0 4px 14px rgba(20,30,60,.25)}
+dialog{border:0;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));width:100%;max-width:560px;margin:auto auto 0;background:var(--surface);color:var(--ink);max-height:92vh;overflow:auto}
+dialog::backdrop{background:rgba(10,15,30,.45)}
+dialog h2{margin:0 0 4px;font-size:1.2rem}
+.cmp{width:100%;border-collapse:collapse;margin-top:12px;font-size:.9rem}
+.cmp th,.cmp td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line)}
+.cmp th:first-child,.cmp td:first-child{text-align:left}
+.cmp .bad{color:var(--neg);font-weight:700}
+.cmp .good{color:var(--ok)}
+.hint{font-size:.82rem;color:var(--muted);margin:6px 0 0}
+.hist{margin-top:10px}
+.hist .h{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:8px}
+.status{font-size:.8rem;color:var(--muted);margin-top:24px;text-align:center}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.toggle{background:none;border:0;color:var(--accent);font:inherit;font-size:.88rem;padding:8px 0;cursor:pointer}
+:root,:root[data-theme="dark"]{
+  --ca:#F4B6E4;--ca-soft:#F4B6E4;--ca-t:#6B1F57;
+  --rtt:#7030A0;--rtt-soft:#7030A0;--rtt-t:#FFFFFF;
+  --rc:#33CCCC;--rc-soft:#33CCCC;--rc-t:#063B3B;
+  --fl:#FF14B4;--fl-soft:#FF14B4;--fl-t:#FFFFFF;
+  --ri-t:#8A5808;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ca:#F4B6E4;--ca-soft:#F4B6E4;--ca-t:#6B1F57;
+  --rtt:#7030A0;--rtt-soft:#7030A0;--rtt-t:#FFFFFF;
+  --rc:#33CCCC;--rc-soft:#33CCCC;--rc-t:#063B3B;
+  --fl:#FF14B4;--fl-soft:#FF14B4;--fl-t:#FFFFFF;
+}}
+
+:root{--vac:#2F7DE1;--ast:#D32F2F;--offbg:#DDE2EA}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--vac:#6AA8FF;--ast:#FF5C5C;--offbg:#283142}}
+:root[data-theme="dark"]{--vac:#6AA8FF;--ast:#FF5C5C;--offbg:#283142}
+.mode{display:flex;gap:6px;margin:10px 0 0}
+.mode button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:10px;padding:8px 6px;font:inherit;font-size:.88rem;cursor:pointer}
+.mode button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:700}
+.years{display:flex;gap:6px;align-items:center;margin:14px 0 4px}
+.years button{flex:1;font-size:1.05rem!important;padding:9px 6px!important}
+.years button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 12px;font:inherit;cursor:pointer}
+.years button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.years .sp{flex:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.78rem;color:var(--muted);margin:8px 0 4px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dow{font-size:.72rem;color:var(--muted);text-align:center;padding:2px 0}
+.day{position:relative;height:50px;border-radius:7px;background:var(--surface);border:0;padding:0;font:inherit;color:var(--ink);overflow:hidden;cursor:pointer}
+.day.blank{background:none;cursor:default}
+.day.off{background:var(--offbg)}
+.day.today{outline:2px solid var(--accent);outline-offset:-2px}
+.day .n{position:absolute;top:2px;left:3px;font-size:.7rem;font-weight:700;z-index:3;background:var(--surface);border-radius:4px;padding:0 3px;line-height:1.3}
+.day.off .n{background:var(--offbg)}
+.day .f{position:absolute;top:2px;right:3px;font-size:.6rem;color:var(--muted);z-index:3}
+.half{position:absolute;left:0;right:0;height:50%;background:var(--cs);z-index:1}
+.half.am{top:0}.half.pm{bottom:0}
+.half.part{bottom:0;height:34%}
+.half.hypo{background:repeating-linear-gradient(135deg,var(--cs) 0 5px,transparent 5px 9px);outline:1px dashed var(--c);outline-offset:-1px}
+.day.vac::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--vac);z-index:2}
+.day.ast::after{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--ast);z-index:2}
+.day.fer{background:var(--surface)}
+.day.fer .n{background:var(--surface);color:#E0A800}
+.day.fer .f{color:#E0A800;font-weight:700;font-size:.62rem}
+.warn{color:var(--neg);font-size:.85rem;font-weight:700;margin:10px 0 0}
+.daytags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+.aide details{background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.aide summary{font-weight:700;cursor:pointer}
+.aide h3{font-size:.95rem;margin:14px 0 4px}
+.aide p,.aide li{font-size:.92rem;line-height:1.5}
+.aide ol,.aide ul{padding-left:20px;margin:6px 0}
+.aide .key{display:inline-block;padding:1px 7px;border-radius:6px;font-weight:700;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>PGI suivi perso</h1>
+    <p id="sub">Chargement…</p>
+  </header>
+  <div class="years" id="years"></div>
+  <section id="bilan"></section>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="annee" aria-selected="true">Calendrier</button>
+    <button role="tab" data-tab="plan" aria-selected="false">Liste</button>
+    <button role="tab" data-tab="ast" aria-selected="false">Astreintes</button>
+    <button role="tab" data-tab="pgi" aria-selected="false">PGI</button>
+    <button role="tab" data-tab="set" aria-selected="false">Réglages</button>
+    <button role="tab" data-tab="aide" aria-selected="false">Aide</button>
+  </nav>
+  <main id="view"></main>
+  <p class="status" id="status"></p>
+</div>
+<button class="btn fab" id="fab" aria-label="Poser une absence">+</button>
+<dialog id="dlg"><form method="dialog" id="mform"></form></dialog>
+<script>
+
+const C = {
+  CA:{name:"Congés annuels",short:"CA",c:"--ca",cs:"--ca-soft",u:"h"},
+  RTT:{name:"Réduction horaire dû",short:"RD",c:"--rtt",cs:"--rtt-soft",u:"h"},
+  RC:{name:"RC",short:"RC",c:"--rc",cs:"--rc-soft",u:"h"},
+  FL:{name:"Fête locale",short:"FL",c:"--fl",cs:"--fl-soft",u:"j"}
+};
+const KEYS = Object.keys(C);
+const KIND = {absence:"Absence", cet:"Versement CET", credit:"Acquisition"};
+const MOM = {jour:"Journée", am:"Matin", pm:"Après-midi", heures:"Heures"};
+// Horaires de référence : 7h45-12h et 12h45-16h30
+const toMin = t => { const [h,mi] = String(t||"0:0").split(":").map(Number); return h*60+(mi||0); };
+function hoursBetween(de, a){ const d = toMin(de), f = toMin(a); if (f <= d) return 0;
+  const pause = Math.max(0, Math.min(f, 765) - Math.max(d, 720)); return Math.round((f-d-pause)/60*100)/100; }
+// Vacances scolaires zone C par défaut (jours sans classe, bornes incluses). Modifiables dans Réglages.
+const DEFAULT_VAC = [
+  {n:"Noël 2025", debut:"2025-12-20", fin:"2026-01-04"},
+  {n:"Hiver 2026", debut:"2026-02-21", fin:"2026-03-08"},
+  {n:"Printemps 2026", debut:"2026-04-18", fin:"2026-05-03"},
+  {n:"Pont de l’Ascension 2026", debut:"2026-05-14", fin:"2026-05-17"},
+  {n:"Été 2026", debut:"2026-07-04", fin:"2026-08-31"},
+  {n:"Toussaint 2026", debut:"2026-10-17", fin:"2026-11-01"},
+  {n:"Noël 2026", debut:"2026-12-19", fin:"2027-01-03"},
+  {n:"Hiver 2027", debut:"2027-02-06", fin:"2027-02-21"},
+  {n:"Printemps 2027", debut:"2027-04-03", fin:"2027-04-18"},
+  {n:"Pont de l’Ascension 2027", debut:"2027-05-06", fin:"2027-05-09"},
+  {n:"Été 2027", debut:"2027-07-03", fin:"2027-09-01"},
+  {n:"Toussaint 2027", debut:"2027-10-23", fin:"2027-11-07"},
+  {n:"Noël 2027", debut:"2027-12-18", fin:"2028-01-02"},
+  {n:"Hiver 2028", debut:"2028-02-12", fin:"2028-02-27"},
+  {n:"Printemps 2028", debut:"2028-04-15", fin:"2028-05-01"},
+  {n:"Pont de l’Ascension 2028", debut:"2028-05-25", fin:"2028-05-28"},
+  {n:"Été 2028 (fin estimée)", debut:"2028-07-05", fin:"2028-08-31"}
+];
+const vacPairs = () => (state.vacances||[]).map(v=>[v.debut, v.fin]);
+const SOL = {off:"Jour non travaillé", worked:"Jour travaillé, 7 h posées", ca:"Rien posé : 7 h de CA au 31/12"};
+
+const SEED = {releves:[], mouvements:[]};
+let state = {releves:[], mouvements:[], solidarite:{}, astreintes:[], vacances:[]};
+let tab = "annee", view = "reel", showPast = false, store = null, saveTimer = null, calYear = new Date().getFullYear();
+
+const $ = s => document.querySelector(s);
+const num = v => { const n = parseFloat(String(v).replace(",", ".").replace(/\s/g,"")); return isNaN(n) ? 0 : n; };
+const fmt = n => (Math.round(n*100)/100).toLocaleString("fr-FR",{maximumFractionDigits:2});
+const fdate = d => new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+const flong = d => new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
+const fday = d => new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+const pad = n => String(n).padStart(2,"0");
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s??"").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const colorVars = k => `--c:var(${C[k].c});--cs:var(${C[k].cs});--ct:var(${C[k].c}-t)`;
+const toD = s => { const [y,m,d] = s.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
+const iso = d => d.toISOString().slice(0,10);
+const addDays = (s,n) => { const d = toD(s); d.setUTCDate(d.getUTCDate()+n); return iso(d); };
+const dow = s => toD(s).getUTCDay();
+
+const ferCache = {};
+function feries(y){
+  if (ferCache[y]) return ferCache[y];
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+    h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+    mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  const E = `${y}-${pad(mo)}-${pad(da)}`;
+  return ferCache[y] = new Set([`${y}-01-01`, addDays(E,1), `${y}-05-01`, `${y}-05-08`, addDays(E,39), addDays(E,50), `${y}-07-14`, `${y}-08-15`, `${y}-11-01`, `${y}-11-11`, `${y}-12-25`]);
+}
+const isFerie = s => feries(+s.slice(0,4)).has(s);
+const isWE = s => { const w = dow(s); return w===0 || w===6; };
+const isWork = s => !isWE(s) && !isFerie(s);
+const isVac = s => vacPairs().some(([a,b]) => s>=a && s<=b);
+// Été (périodes longues) : liseré seulement le premier et le dernier jour
+const vacMark = s => vacPairs().some(([a,b]) => (toD(b)-toD(a) > 20*864e5) ? (s===a || s===b) : (s>=a && s<=b));
+const astOn = s => (state.astreintes||[]).find(a => s>=a.debut && s<=a.fin);
+function workDays(a,b){ let n=0; for (let s=a; s<=b; s=addDays(s,1)) if (isWork(s)) n++; return n; }
+function astConflict(m){ const fin = m.fin||m.date; for (let s=m.date; s<=fin; s=addDays(s,1)) if (isWork(s) && (state.astreintes||[]).some(a => s>a.debut && s<=a.fin)) return true; return false; }
+
+function solMvts(){
+  const out = [];
+  for (const [y,s] of Object.entries(state.solidarite||{})){
+    if (!s) continue;
+    if (s.mode==="ca") out.push({id:"sol-"+y, date:y+"-12-31", c:"CA", h:7, kind:"absence", note:"Journée de solidarité : décompte automatique", virt:true});
+    else if (s.date) out.push({id:"sol-"+y, date:s.date, c:s.c||"RC", h:7, kind:"absence", note:"Journée de solidarité : "+SOL[s.mode].toLowerCase(), virt:true});
+  }
+  return out;
+}
+const DEF_DROITS = {RTT:260, CA:189, FL:1};
+const DROIT_DATE = {RTT:"01-01", CA:"05-01", FL:"01-01"};
+const DROITS_START = 2027;
+const droits = () => ({...DEF_DROITS, ...(state.droits||{})});
+function droitsMvts(){
+  const ys = state.mouvements.filter(m=>m.kind!=="credit").map(m=>+m.date.slice(0,4));
+  const maxY = Math.max(new Date().getFullYear(), ...ys);
+  const out = [], d = droits();
+  for (let y=DROITS_START; y<=maxY; y++) for (const k of Object.keys(DEF_DROITS)) if (d[k]>0)
+    out.push({id:`dr-${k}-${y}`, date:`${y}-${DROIT_DATE[k]}`, c:k, h:d[k], kind:"credit", note:`Droits ${y} (automatique)`, virt:true});
+  return out;
+}
+const allM = incH => state.mouvements.filter(m => incH || m.statut!=="hypo").concat(solMvts(), droitsMvts());
+
+function lastReleve(before){
+  const r = state.releves.filter(x => !before || x.date < before).sort((a,b)=>a.date.localeCompare(b.date));
+  return r[r.length-1] || null;
+}
+function delta(k, from, to){ // effet du réel dans (from, to] — jamais les hypothèses
+  let d = 0;
+  for (const m of allM(false)){
+    if (m.c !== k) continue;
+    if (from && m.date <= from) continue;
+    if (to && m.date > to) continue;
+    d += m.kind === "credit" ? m.h : -m.h;
+  }
+  return d;
+}
+function soldeAt(k, end){
+  const r = state.releves.filter(x => x.date <= end).sort((a,b)=>a.date.localeCompare(b.date)).pop();
+  if (!r) return null;
+  let v = num(r.soldes[k]);
+  for (const m of allM(true)){ if (m.c!==k || m.date<=r.date || m.date>end) continue; v += m.kind==="credit" ? m.h : -m.h; }
+  return v;
+}
+function yearsList(){
+  const ys = state.mouvements.map(m=>+m.date.slice(0,4)).concat((state.astreintes||[]).map(a=>+a.debut.slice(0,4)));
+  const max = Math.max(new Date().getFullYear()+1, ...ys);
+  const out = []; for (let y=2026; y<=max; y++) out.push(y); return out;
+}
+function renderTop(){
+  const r = lastReleve();
+  $("#sub").textContent = r ? `Dernier relevé PGI : ${flong(r.date)}` : "Aucun relevé PGI pour l’instant";
+  $("#years").innerHTML = yearsList().map(v=>`<button data-y="${v}" aria-pressed="${v===calYear}">${v}</button>`).join("");
+  $("#years").querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{ calYear=+b.dataset.y; render(); });
+  $("#bilan").innerHTML = renderBilan(calYear);
+  $("#editDroits").onclick = openDroits;
+}
+
+function rangeLabel(m){
+  if (m.fin && m.fin !== m.date) return `${fdate(m.date)} → ${fdate(m.fin)}`;
+  if (m.moment==="heures" && m.de) return `${fdate(m.date)} (${m.de.replace(":","h")}–${m.a.replace(":","h")})`;
+  return fdate(m.date) + (m.moment && m.moment!=="jour" ? ` (${MOM[m.moment].toLowerCase()})` : "");
+}
+function itemHTML(m, past){
+  const sign = m.kind === "credit" ? "+" : "−";
+  const tags = [`<span class="tag">${C[m.c].short}</span>`];
+  if (m.kind!=="absence") tags.push(`<span class="tag">${KIND[m.kind]}</span>`);
+  if (m.statut==="hypo") tags.push(`<span class="tag">hypothèse</span>`);
+  if (past) tags.push(`<span class="tag">déjà dans PGI</span>`);
+  if (m.kind==="absence" && astConflict(m)) tags.push(`<span class="tag" style="color:var(--neg);border-color:var(--neg);white-space:nowrap">pdt astreinte</span>`);
+  return `<button class="item ${past?"past":""}" data-id="${m.id}" style="${colorVars(m.c)}${m.statut==="hypo"?";opacity:.8":""}">
+    <span class="chip">${sign}${fmt(m.h)} ${C[m.c].u}</span>
+    <span class="main"><span class="d">${rangeLabel(m)}</span> ${tags.join("")}
+    ${m.note?`<div class="n">${esc(m.note)}</div>`:""}</span></button>`;
+}
+
+function renderPlan(){
+  const r = lastReleve(), y = String(calYear);
+  const list = allM(true).filter(m => m.date.slice(0,4)===y).sort((a,b)=>a.date.localeCompare(b.date));
+  if (!list.length) return `<div class="empty">Rien pour ${y}. Touchez + pour ajouter une absence, un versement CET ou une acquisition d’heures.</div>`;
+  let html = "", cur = "";
+  for (const m of list){
+    const mo = new Date(m.date+"T12:00:00").toLocaleDateString("fr-FR",{month:"long"});
+    if (mo !== cur){ html += `<div class="month">${mo}</div>`; cur = mo; }
+    html += itemHTML(m, r && m.date <= r.date && m.statut!=="hypo");
+  }
+  return html;
+}
+
+// --- Vue année ---
+function dayItems(s){
+  const out = [];
+  for (const m of allM(true)){
+    if (m.kind!=="absence") continue;
+    const fin = m.fin || m.date;
+    if (s < m.date || s > fin) continue;
+    if (fin !== m.date && !isWork(s)) continue;
+    const wd = fin===m.date ? 1 : Math.max(1, workDays(m.date, fin));
+    const perDay = C[m.c].u==="j" ? 8 : m.h / wd;
+    let place = m.moment==="am" ? "am" : m.moment==="pm" ? "pm" : m.moment==="heures" && m.de ? (toMin(m.a)<=720 ? "am" : toMin(m.de)>=720 ? "pm" : perDay >= 6 ? "full" : "part") : perDay >= 6 ? "full" : "part";
+    out.push({m, place});
+  }
+  return out;
+}
+function dayCell(s){
+  const cls = ["day"];
+  if (!isWork(s)) cls.push("off");
+  if (isFerie(s)) cls.push("fer");
+  if (vacMark(s)) cls.push("vac");
+  if (astOn(s)) cls.push("ast");
+  if (s===today()) cls.push("today");
+  const slots = {am:null, pm:null}; let part = null;
+  for (const {m, place} of dayItems(s)){
+    if (place==="full"){ if (!slots.am && !slots.pm){ slots.am = slots.pm = m; } else if (!slots.am) slots.am = m; else if (!slots.pm || slots.pm===slots.am) slots.pm = m; }
+    else if (place==="am"){ if (!slots.am) slots.am = m; else if (!slots.pm) slots.pm = m; }
+    else if (place==="pm"){ if (!slots.pm || slots.pm===slots.am) slots.pm = m; else if (!slots.am) slots.am = m; }
+    else if (!part) part = m;
+  }
+  let inner = "";
+  const half = (m, pos) => `<span class="half ${pos} ${m.statut==="hypo"?"hypo":""}" style="${colorVars(m.c)}"></span>`;
+  if (slots.am) inner += half(slots.am, "am");
+  if (slots.pm) inner += half(slots.pm, "pm");
+  if (part && !slots.pm) inner += half(part, "part");
+  return `<button class="${cls.join(" ")}" data-day="${s}"><span class="n">${+s.slice(8)}</span>${isFerie(s)?`<span class="f">férié</span>`:""}${inner}</button>`;
+}
+function renderAnnee(){
+  const y = calYear;
+  let html = `<div class="legend">
+      ${KEYS.map(k=>`<span><i style="background:var(${C[k].cs})"></i>${C[k].short}</span>`).join("")}
+      <span><i style="background:repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 6px);outline:1px dashed var(--muted)"></i>Hypothèse</span>
+      <span><i style="background:var(--vac);width:5px"></i>Vacances zone C</span>
+      <span><i style="background:var(--ast);height:5px"></i>Astreinte</span>
+      <span style="color:#E0A800;font-weight:700">Férié</span>
+    </div>`;
+  const dn = ["L","M","M","J","V","S","D"];
+  for (let mo=1; mo<=12; mo++){
+    const first = `${y}-${pad(mo)}-01`;
+    const nb = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    const lead = (dow(first)+6)%7;
+    html += `<div class="month" id="m${mo}">${new Date(first+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</div><div class="cal">${dn.map(d=>`<div class="dow">${d}</div>`).join("")}`;
+    for (let i=0;i<lead;i++) html += `<span class="day blank"></span>`;
+    for (let d=1; d<=nb; d++) html += dayCell(`${y}-${pad(mo)}-${pad(d)}`);
+    html += `</div>`;
+  }
+  return html;
+}
+
+function openDay(s){
+  const f = $("#mform");
+  const a = astOn(s);
+  const items = dayItems(s);
+  const tags = [];
+  if (isFerie(s)) tags.push("Férié"); else if (isWE(s)) tags.push("Week-end");
+  if (isVac(s)) tags.push("Vacances scolaires");
+  if (a) tags.push(`Astreinte du ${fdate(a.debut)} au ${fdate(a.fin)}`);
+  f.innerHTML = `<h2 style="text-transform:capitalize">${fday(s)}</h2>
+    <div class="daytags">${tags.map(t=>`<span class="tag" style="margin:0">${esc(t)}</span>`).join("")}</div>
+    ${items.length ? items.map(({m})=>itemHTML(m,false)).join("") : `<p class="hint">Rien de posé ce jour.</p>`}
+    ${a && isWork(s) && s!==a.debut ? `<p class="warn">Jour d’astreinte : à ne poser qu’en cas exceptionnel.</p>` : ""}
+    <div class="actions" style="flex-wrap:wrap">
+      <button type="button" class="btn" id="dPose">Poser ce jour</button>
+      ${a ? `<button type="button" class="btn ghost" id="dAst">Modifier l’astreinte</button>` : `<button type="button" class="btn ghost" id="dAst">Astreinte à partir d’ici</button>`}
+      <button type="button" class="btn ghost" id="dClose">Fermer</button>
+    </div>`;
+  f.querySelectorAll(".item[data-id]").forEach(b=>b.onclick=()=>{ const id=b.dataset.id; $("#dlg").close();
+    if (id.startsWith("sol-")) openSol(id.slice(4)); else openForm(state.mouvements.find(m=>m.id===id)); });
+  $("#dPose").onclick=()=>{ $("#dlg").close(); openForm(null, s); };
+  $("#dAst").onclick=()=>{ $("#dlg").close(); openAst(a || {id:uid(), debut:s, fin:addDays(s,7)}, !a); };
+  $("#dClose").onclick=()=>$("#dlg").close();
+  $("#dlg").showModal();
+}
+
+function openAst(a, isNew){
+  a = {...a};
+  const f = $("#mform");
+  f.innerHTML = `<h2>${isNew?"Ajouter une astreinte":"Astreinte"}</h2>
+    <label for="aDeb">Début (jeudi 17 h)</label><input type="date" id="aDeb" value="${a.debut}">
+    <p class="hint" id="aInfo"></p>
+    <div class="actions">
+      ${isNew?"":`<button type="button" class="btn danger" id="aDel">Supprimer</button>`}
+      <button type="button" class="btn ghost" id="aCancel">Annuler</button>
+      <button type="button" class="btn" id="aOk">${isNew?"Ajouter":"Enregistrer"}</button>
+    </div>`;
+  const info = () => { const v = $("#aDeb").value; $("#aInfo").innerHTML = v ? astInfoText(v) : ""; };
+  $("#aDeb").oninput = info; info();
+  $("#aCancel").onclick=()=>$("#dlg").close();
+  $("#aOk").onclick=()=>{ a.debut=$("#aDeb").value; if(!a.debut) return; a.fin=addDays(a.debut,7);
+    state.astreintes = (state.astreintes||[]).filter(x=>x.id!==a.id).concat(a); save(); $("#dlg").close(); render(); };
+  const d=$("#aDel"); if (d) d.onclick=()=>{ state.astreintes = state.astreintes.filter(x=>x.id!==a.id); save(); $("#dlg").close(); render(); };
+  $("#dlg").showModal();
+}
+
+// --- Bilan annuel / droits ---
+function renderBilan(y){
+  const d = droits();
+  const per = k => k==="CA" ? [`${y}-05-01`, `${y+1}-04-30`] : [`${y}-01-01`, `${y}-12-31`];
+  const rows = KEYS.map(k=>{
+    const [a,b] = per(k);
+    let pose = 0, hypo = 0;
+    for (const m of allM(true)){
+      if (m.c!==k || m.kind==="credit" || m.date<a || m.date>b) continue;
+      if (m.statut==="hypo") hypo += m.h; else pose += m.h;
+    }
+    const reste = k==="RC" ? soldeAt("RC", `${y}-12-31`) : d[k] - pose - hypo;
+    return `<tr><td><span class="chip" style="${colorVars(k)};min-width:0;padding:2px 6px">${C[k].short}</span></td>
+      <td>${k==="RC"?"–":fmt(d[k])}</td><td>${fmt(pose)}</td><td>${hypo?fmt(hypo):"–"}</td>
+      <td class="${reste!==null&&reste<0?"bad":""}" style="font-weight:700">${reste===null?"–":fmt(reste)}</td></tr>`;
+  }).join("");
+  return `<div class="card" style="padding:12px 14px;margin:8px 0">
+    <table class="cmp" style="margin-top:0"><thead><tr><th>Bilan ${y}</th><th>Droits</th><th>Posé</th><th>Hypo.</th><th>Reste</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="hint">Posé inclut le CET. CA : du 1er mai ${y} au 30 avril ${y+1}. RC : reste = solde prévu au 31/12 (pas de droit fixe). FL en jours.</p>
+    <button class="toggle" id="editDroits">Régler les droits annuels</button></div>`;
+}
+function openDroits(){
+  const d = droits(), f = $("#mform");
+  f.innerHTML = `<h2>Droits annuels</h2>
+    <p class="hint">Ajoutés automatiquement chaque année à partir de ${DROITS_START}, à la date où PGI les crédite.</p>
+    <label for="dRTT">RD : heures au 1er janvier</label><input id="dRTT" inputmode="decimal" value="${fmt(d.RTT)}">
+    <label for="dCA">CA : heures au 1er mai</label><input id="dCA" inputmode="decimal" value="${fmt(d.CA)}">
+    <label for="dFL">FL : jours au 1er janvier</label><input id="dFL" inputmode="decimal" value="${fmt(d.FL)}">
+    <div class="actions"><button type="button" class="btn ghost" id="drCancel">Annuler</button><button type="button" class="btn" id="drOk">Enregistrer</button></div>`;
+  $("#drCancel").onclick=()=>$("#dlg").close();
+  $("#drOk").onclick=()=>{ state.droits = {RTT:num($("#dRTT").value), CA:num($("#dCA").value), FL:num($("#dFL").value)}; save(); $("#dlg").close(); render(); };
+  $("#dlg").showModal();
+}
+
+// --- Astreintes ---
+function astInfoText(v){
+  return (dow(v)!==4 ? `<span class="warn" style="display:block;margin:0 0 4px">Ce n’est pas un jeudi.</span>` : "") + `Fin : ${fday(addDays(v,7))} à 17 h.`;
+}
+function astAbsences(a){
+  return allM(true).filter(m => m.kind==="absence" && m.date <= a.fin && (m.fin||m.date) >= a.debut && astConflict(m)).length;
+}
+function renderAst(){
+  const list = (state.astreintes||[]).filter(a=>a.debut.slice(0,4)===String(calYear)).sort((a,b)=>a.debut.localeCompare(b.debut));
+  let html = `<div class="card">
+    <label for="astDeb" style="margin-top:0">Début de l’astreinte (jeudi 17 h)</label>
+    <input type="date" id="astDeb">
+    <p class="hint" id="astInfo">La fin est calculée automatiquement : le jeudi suivant à 17 h.</p>
+    <button class="btn wide" id="astAdd">Ajouter l’astreinte</button>
+  </div>`;
+  if (!list.length) return html + `<div class="empty">Aucune astreinte en ${calYear}.</div>`;
+  html += `<div class="month">${list.length} astreinte${list.length>1?"s":""} en ${calYear}</div>`;
+  for (const a of list){
+    const n = astAbsences(a);
+    html += `<div class="item" style="cursor:default"><span class="chip" style="--cs:var(--ast);--ct:#fff">A</span>
+      <span class="main"><span class="d">${fdate(a.debut)} 17 h → ${fdate(a.fin)} 17 h</span>
+      ${n ? `<div class="n" style="color:var(--neg)">${n} absence${n>1?"s":""} posée${n>1?"s":""} pendant cette astreinte</div>` : ""}</span>
+      <button class="toggle" data-dela="${a.id}" style="color:var(--neg)">Supprimer</button></div>`;
+  }
+  return html;
+}
+
+// --- Réglages : vacances, droits, sauvegardes ---
+function renderSet(){
+  const vs = [...state.vacances].sort((a,b)=>a.debut.localeCompare(b.debut));
+  return `<div class="month" style="margin-top:4px">Sauvegarde</div>
+  <div class="card">
+    <p class="hint" style="margin-top:0">Vos données sont uniquement sur cet iPhone. Exportez une sauvegarde régulièrement (à chaque relevé PGI par exemple) et rangez-la dans Fichiers ou iCloud.</p>
+    <button class="btn wide" id="expJson">Exporter une sauvegarde</button>
+    <button class="btn ghost wide" id="impJson" style="margin-top:8px">Importer une sauvegarde</button>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+    <button class="btn ghost wide" id="expCsv" style="margin-top:8px">Exporter en CSV (pour vérification)</button>
+    <p class="hint" id="setMsg"></p>
+  </div>
+  <div class="month">Droits annuels</div>
+  <div class="card"><p class="hint" style="margin-top:0">RD ${fmt(droits().RTT)} h au 1er janvier, CA ${fmt(droits().CA)} h au 1er mai, FL ${fmt(droits().FL)} j au 1er janvier.</p>
+    <button class="btn ghost wide" id="setDroits">Modifier les droits annuels</button></div>
+  <div class="month">Vacances scolaires (zone C)</div>
+  <div class="card">
+    <label for="vN" style="margin-top:0">Nom</label><input id="vN" placeholder="ex. Toussaint 2028">
+    <div class="row">
+      <div><label for="vD">Premier jour sans classe</label><input type="date" id="vD"></div>
+      <div><label for="vF">Dernier jour sans classe</label><input type="date" id="vF"></div>
+    </div>
+    <p class="hint">Le calendrier officiel indique le jour de départ (après la classe) et le jour de reprise : saisissez le lendemain du départ et la veille de la reprise.</p>
+    <button class="btn wide" id="vAdd">Ajouter la période</button>
+  </div>
+  ${vs.map(v=>`<div class="item" style="cursor:default"><span class="chip" style="--cs:var(--vac);--ct:#fff">V</span>
+    <span class="main"><span class="d">${esc(v.n||"Vacances")}</span><div class="n">${fdate(v.debut)} → ${fdate(v.fin)}</div></span>
+    <button class="toggle" data-delv="${v.id}" style="color:var(--neg)">Supprimer</button></div>`).join("")}`;
+}
+async function download(name, text, type){
+  const blob = new Blob([text], {type});
+  try { const file = new File([blob], name, {type});
+    if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:name}); return; } }
+  catch(e){ if (e && e.name==="AbortError") return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+function toCSV(){
+  const q = v => { const t = String(v??""); return /[;"\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; };
+  const num2 = n => String(Math.round(n*100)/100).replace(".", ",");
+  const rows = [["categorie","date","fin","compteur","heures_ou_jours","type","statut","moment","de","a","note"]];
+  for (const m of allM(true).sort((a,b)=>a.date.localeCompare(b.date)))
+    rows.push([m.virt?"automatique":"saisie", m.date, m.fin||"", C[m.c].short, num2(m.h), KIND[m.kind], m.statut==="hypo"?"hypothèse":(m.kind==="absence"?"posé":""), m.moment?MOM[m.moment]:"", m.de||"", m.a||"", m.note||""]);
+  for (const r of [...state.releves].sort((a,b)=>a.date.localeCompare(b.date)))
+    for (const k of KEYS) rows.push(["releve_PGI", r.date, "", C[k].short, num2(num(r.soldes[k])), "Solde PGI", "", "", "", "", k==="RC"&&r.soldes.RCd ? RCT.map(([t,l])=>`${l} ${num2(r.soldes.RCd[t]||0)}`).join(" / ") : ""]);
+  for (const a of [...state.astreintes].sort((x,y)=>x.debut.localeCompare(y.debut)))
+    rows.push(["astreinte", a.debut, a.fin, "", "", "Astreinte", "", "", "17:00", "17:00", ""]);
+  return "\ufeff" + rows.map(r=>r.map(q).join(";")).join("\n");
+}
+
+// --- Aide ---
+function renderAide(){
+  const k = (c,t) => `<span class="key" style="${colorVars(c)};background:var(--cs);color:var(--ct)">${t}</span>`;
+  return `<div class="aide">
+<p class="hint" style="margin-top:4px">Mode d’emploi de l’appli : ce qu’il faut faire chaque mois, chaque année, et comment la mettre à jour.</p>
+
+<details open><summary>Chaque mois (5 minutes)</summary>
+<ol>
+<li>Dans PGI, ouvrez l’écran « Soldes » à la date du jour.</li>
+<li>Onglet <b>PGI</b> : saisissez la date et les soldes CA, RD, FL, et les 4 types de RC (astreinte, obligatoire, HS 150 %, HS 175 %). L’appli additionne les RC.</li>
+<li>Regardez le tableau « Écart » : <b>OK</b> partout = tout colle. Un écart = une absence oubliée d’un côté ou de l’autre, ou des RC acquises non saisies.</li>
+<li>Si des RC ont été acquises (astreintes, heures sup), ajoutez-les : bouton <b>+</b>, type <i>Acquisition</i>, compteur RC.</li>
+<li>Onglet <b>Réglages</b> : <b>Exporter une sauvegarde</b> et rangez-la dans Fichiers / iCloud.</li>
+</ol></details>
+
+<details><summary>Poser un congé ou une hypothèse</summary>
+<ol>
+<li>Onglet <b>Calendrier</b> : touchez le jour, puis « Poser ce jour » (ou bouton <b>+</b>).</li>
+<li>Choisissez le compteur ${k("CA","CA")} ${k("RTT","RD")} ${k("RC","RC")} ${k("FL","FL")}.</li>
+<li><b>Statut</b> : <i>Hypothèse</i> (case hachurée, pour tester) ou <i>Posé dans PGI</i> (case pleine). Une date future est mise en hypothèse par défaut.</li>
+<li><b>Durée</b> : Journée (8 h), Matin 7h45-12h (4,25 h), Après-midi 12h45-16h30 (3,75 h), ou Heures « de… à… » (la pause 12h-12h45 est déduite). Pour une période, remplissez « Au ».</li>
+<li>Quand le congé est saisi dans PGI : ouvrez-le et passez-le en <i>Posé dans PGI</i>.</li>
+</ol>
+<p>Pour déplacer ou supprimer : touchez le jour, puis la ligne.</p></details>
+
+<details><summary>En début d’année (janvier)</summary>
+<ol>
+<li><b>Droits</b> : vérifiez dans PGI vos droits de l’année (RD au 1er janvier, FL au 1er janvier, CA au 1er mai). S’ils ont changé : Réglages, « Modifier les droits annuels ». L’appli les ajoute toute seule chaque année.</li>
+<li><b>Astreintes</b> : onglet Astreintes, saisissez la date de chaque jeudi de début (du jeudi 17 h au jeudi suivant 17 h, la fin est calculée).</li>
+<li><b>Journée de solidarité</b> : onglet Liste, encart en haut. Le lundi de Pentecôte n’est pas travaillé chez EDF : la journée de solidarité est à poser. Trois options :
+  <ul><li>jour non travaillé : 7 h sur un compteur + la journée posée à part (en 2026 : 8 h RD + 7 h RC le 16/01) ;</li>
+  <li>jour travaillé avec 7 h posées ;</li>
+  <li>rien posé : PGI retire 7 h de CA le 31/12.</li></ul></li>
+<li><b>CET</b> : bouton <b>+</b>, type <i>Versement CET</i>, une ligne par compteur, datée du 31/12 (en 2026 : 49 h CA + 42 h RD).</li>
+<li><b>Hypothèses</b> : placez vos congés de l’année et regardez le bilan en haut.</li>
+</ol></details>
+
+<details><summary>Vacances scolaires (une fois par an, vers juillet)</summary>
+<p>Le calendrier officiel de l’année scolaire suivante paraît en général l’été précédent (servicepublic.fr, education.gouv.fr). Zone C.</p>
+<ol>
+<li>Onglet <b>Réglages</b>, « Vacances scolaires ».</li>
+<li>Le calendrier officiel donne le <b>jour de départ</b> (après la classe) et le <b>jour de reprise</b> : saisissez le <b>lendemain du départ</b> comme premier jour et la <b>veille de la reprise</b> comme dernier jour.</li>
+<li>Une période par vacances : Toussaint, Noël, hiver, printemps, pont de l’Ascension, été.</li>
+<li>Corrigez la fin de l’été quand la date de rentrée est connue (l’été 2028 est estimé au 31/08).</li>
+</ol>
+<p>Dans le calendrier, l’été n’est marqué que le premier et le dernier jour. Les jours fériés sont calculés automatiquement, rien à saisir.</p></details>
+
+<details><summary>Règles de calcul</summary>
+<ul>
+<li><b>PGI</b> ne déduit une absence qu’une fois la date passée ; l’appli la déduit dès qu’elle est posée. Le solde PGI « à la date du » inclut ce jour-là.</li>
+<li><b>Contrôle</b> : attendu = relevé précédent − absences posées + acquisitions entre les deux dates. Les hypothèses ne comptent jamais.</li>
+<li><b>Bilan</b> : Droits − Posé (CET compris) − Hypothèses = Reste. CA sur la période 1er mai → 30 avril. RC : pas de droit fixe, « Reste » = solde prévu au 31/12. FL en jours.</li>
+<li><b>Astreinte</b> : une absence pendant une astreinte est signalée « pdt astreinte » (sauf le jeudi de début, l’astreinte commençant à 17 h).</li>
+<li><b>Couleurs</b> : ${k("CA","CA")} ${k("RTT","RD")} ${k("RC","RC")} ${k("FL","FL")} ; hachuré = hypothèse ; liseré bleu = vacances ; barre rouge = astreinte ; date en jaune = férié.</li>
+</ul></details>
+
+<details><summary>Sauvegardes et changement de téléphone</summary>
+<ul>
+<li>Les données sont <b>uniquement sur cet iPhone</b>, dans l’appli de l’écran d’accueil. Ouvrez toujours l’appli par son icône : dans Safari, les données sont séparées.</li>
+<li>Exportez une sauvegarde au moins une fois par mois (le bas de l’écran rappelle la date de la dernière).</li>
+<li>Nouveau téléphone : installez l’appli (voir ci-dessous), puis Réglages, « Importer une sauvegarde ».</li>
+<li>Ne pas effacer l’historique et les données de sites dans Réglages iOS > Safari : cela peut effacer l’appli.</li>
+<li>Un doute ou un écart : exportez en CSV et envoyez-le à Claude avec une capture de PGI.</li>
+</ul></details>
+
+<details><summary>Mettre à jour l’appli (nouvelle version)</summary>
+<ol>
+<li><b>Avant tout</b> : Réglages, « Exporter une sauvegarde ».</li>
+<li>Sur GitHub (dépôt <b>kandrita123/mes-conges</b>) : « Add file » > « Upload files », déposez le nouveau <b>index.html</b> (et les autres fichiers fournis s’il y en a), puis « Commit changes ».</li>
+<li>Attendez 1 à 2 minutes, fermez complètement l’appli (balayer vers le haut) et rouvrez-la. Si l’ancienne version s’affiche encore, refaites-le une fois.</li>
+<li>Vos données ne sont pas effacées par une mise à jour. En cas de problème : Réglages, « Importer une sauvegarde ».</li>
+<li>Ne renommez pas le dépôt et ne changez pas l’adresse : l’icône ne fonctionnerait plus.</li>
+</ol></details>
+
+<details><summary>Installer l’appli (première fois ou nouveau téléphone)</summary>
+<ol>
+<li>Ouvrez kandrita123.github.io/mes-conges dans <b>Safari</b>.</li>
+<li>Partager > « Sur l’écran d’accueil » > Ajouter.</li>
+<li>Ouvrez l’appli par l’icône, puis importez votre dernière sauvegarde si besoin.</li>
+</ol></details>
+</div>`;
+}
+
+// --- Relevé / historique ---
+const RCT = [["ast","Astreinte"],["obl","Obligatoire"],["hs150","HS 150 %"],["hs175","HS 175 %"]];
+function rv(k){
+  if (k!=="RC") return $("#r_"+k).value;
+  const xs = RCT.map(([t])=>$("#r_RC_"+t).value).filter(x=>x!=="");
+  return xs.length ? String(xs.reduce((s,x)=>s+num(x),0)) : "";
+}
+function renderReleve(){
+  return `<div class="card">
+    <p class="hint" style="margin-top:0">Recopiez les soldes de l’écran « Soldes » de PGI. L’appli compare avec ce que PGI devrait afficher d’après vos posés (les hypothèses ne comptent pas).</p>
+    <label for="rdate">Situation à la date du</label>
+    <input type="date" id="rdate" value="${today()}">
+    ${KEYS.map(k=> k==="RC"
+      ? `<label>RC (h) : un champ par compteur PGI, l’appli fait la somme</label>
+         <div class="row">${RCT.map(([t,l])=>`<div><label for="r_RC_${t}" style="font-weight:400;margin-top:4px">${l}</label><input id="r_RC_${t}" inputmode="decimal" autocomplete="off"></div>`).join("")}</div>
+         <p class="hint" id="rcSum"></p>`
+      : `<label for="r_${k}">${C[k].name} (${C[k].u})</label><input id="r_${k}" inputmode="decimal" autocomplete="off">`).join("")}
+    <div id="rcmp"></div>
+    <button class="btn wide" id="rsave">Enregistrer le relevé</button>
+  </div>`;
+}
+function releveCompare(){
+  const date = $("#rdate").value;
+  const prev = lastReleve(date);
+  const box = $("#rcmp");
+  if (!prev){ box.innerHTML = `<p class="hint">Premier relevé : pas de comparaison possible.</p>`; return; }
+  let rows = "";
+  for (const k of KEYS){
+    const v = rv(k);
+    if (k==="RC"){ const sm = $("#rcSum"); if (sm) sm.textContent = v==="" ? "" : `Total RC : ${fmt(num(v))} h`; }
+    const exp = num(prev.soldes[k]) + delta(k, prev.date, date);
+    const got = v === "" ? null : num(v);
+    const e = got === null ? null : got - exp;
+    rows += `<tr><td>${C[k].short}</td><td>${fmt(exp)}</td><td>${got===null?"–":fmt(got)}</td>
+      <td class="${e===null?"":Math.abs(e)<0.01?"good":"bad"}">${e===null?"":Math.abs(e)<0.01?"OK":(e>0?"+":"")+fmt(e)}</td></tr>`;
+  }
+  box.innerHTML = `<table class="cmp"><thead><tr><th></th><th>Attendu</th><th>PGI</th><th>Écart</th></tr></thead><tbody>${rows}</tbody></table>
+  <p class="hint">Attendu = relevé du ${fdate(prev.date)} ± ce que vous avez posé entre les deux dates. Un écart signale un posé oublié d’un côté ou de l’autre, ou des heures acquises non saisies (RC d’astreinte par exemple).</p>`;
+}
+function renderHist(){
+  const rs = state.releves.filter(r=>r.date.slice(0,4)===String(calYear)).sort((a,b)=>b.date.localeCompare(a.date));
+  if (!rs.length) return `<div class="empty">Aucun relevé en ${calYear}.</div>`;
+  return `<div class="hist">` + rs.map(r=>{
+    const prev = lastReleve(r.date);
+    const cells = KEYS.map(k=>{
+      let e = "";
+      if (prev){ const d = num(r.soldes[k]) - (num(prev.soldes[k]) + delta(k, prev.date, r.date));
+        e = Math.abs(d)<0.01 ? `<span class="good">OK</span>` : `<span class="bad">${d>0?"+":""}${fmt(d)}</span>`; }
+      const det = k==="RC" && r.soldes.RCd ? `<div class="n" style="font-size:.75rem;color:var(--muted)">${RCT.map(([t,l])=>`${l} ${fmt(r.soldes.RCd[t]||0)}`).join(", ")}</div>` : "";
+      return `<tr><td>${C[k].name}${det}</td><td>${fmt(num(r.soldes[k]))} ${C[k].u}</td><td>${e}</td></tr>`;
+    }).join("");
+    return `<div class="h"><strong>${flong(r.date)}</strong>
+      <table class="cmp"><thead><tr><th></th><th>Solde PGI</th><th>Écart</th></tr></thead><tbody>${cells}</tbody></table>
+      <button class="toggle" data-delr="${r.date}" style="color:var(--neg)">Supprimer ce relevé</button></div>`;
+  }).join("") + `</div>`;
+}
+
+// --- Journée de solidarité ---
+function renderSol(){
+  const ys = [String(calYear)];
+  return `<div class="month" style="margin-top:4px">Journée de solidarité</div>` + ys.map(y=>{
+    const s = (state.solidarite||{})[y];
+    const txt = !s ? "Pas encore choisi" : s.mode==="ca" ? SOL.ca : `${SOL[s.mode]}, ${s.date?fdate(s.date):"date à choisir"}, 7 h sur ${C[s.c||"RC"].short}`;
+    return `<button class="item" data-sol="${y}"><span class="chip" style="--c:var(--accent);--cs:var(--bg)">${y}</span><span class="main"><span class="d">${esc(txt)}</span></span></button>`;
+  }).join("");
+}
+function openSol(y){
+  const saved = (state.solidarite||{})[y];
+  const s = {...(saved || {mode:"off", date:"", c:"RC"})};
+  const f = $("#mform");
+  const draw = () => {
+    f.innerHTML = `<h2>Journée de solidarité ${y}</h2>
+      <label>Ce que vous avez fait</label>
+      <div class="seg" style="flex-direction:column">${Object.entries(SOL).map(([k,l])=>`<button type="button" data-v="${k}" aria-pressed="${s.mode===k}">${l}</button>`).join("")}</div>
+      ${s.mode==="ca" ? `<p class="hint">7 h de CA seront déduites le 31/12/${y}.</p>` : `
+        <label for="sdate">Date</label><input type="date" id="sdate" value="${s.date||""}">
+        <label>7 h prises sur</label>
+        <div class="seg">${KEYS.filter(k=>k!=="FL").map(k=>`<button type="button" data-c="${k}" aria-pressed="${(s.c||"RC")===k}" style="${colorVars(k)}">${C[k].short}</button>`).join("")}</div>
+        ${s.mode==="off" ? `<p class="hint">Posez aussi la journée elle-même comme une absence normale.</p>` : ""}`}
+      <div class="actions">
+        ${saved ? `<button type="button" class="btn danger" id="sdel">Effacer</button>` : ""}
+        <button type="button" class="btn ghost" id="scancel">Annuler</button>
+        <button type="button" class="btn" id="sok">Enregistrer</button>
+      </div>`;
+    const keep = () => { const d = $("#sdate"); if (d) s.date = d.value; };
+    f.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{keep(); s.mode=b.dataset.v; draw();});
+    f.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{keep(); s.c=b.dataset.c; draw();});
+    $("#scancel").onclick=()=>$("#dlg").close();
+    $("#sok").onclick=()=>{ keep(); if (s.mode!=="ca" && !s.date) return;
+      state.solidarite = {...(state.solidarite||{}), [y]: s}; save(); $("#dlg").close(); render(); };
+    const del = $("#sdel"); if (del) del.onclick=()=>{ const o = {...state.solidarite}; delete o[y]; state.solidarite = o; save(); $("#dlg").close(); render(); };
+  };
+  draw();
+  $("#dlg").showModal();
+}
+
+// --- Formulaire absence ---
+function autoHours(m){
+  if (m.kind!=="absence") return;
+  const fin = m.fin && m.fin > m.date ? m.fin : m.date;
+  if (C[m.c].u==="j"){ m.h = fin===m.date ? 1 : workDays(m.date, fin); return; }
+  if (m.moment==="am"){ m.h = 4.25; return; }
+  if (m.moment==="pm"){ m.h = 3.75; return; }
+  if (m.moment==="heures"){ m.h = hoursBetween(m.de||"15:00", m.a||"16:30"); return; }
+  m.h = 8 * (fin===m.date ? 1 : workDays(m.date, fin));
+}
+function openForm(m, date){
+  const isNew = !m;
+  m = m ? {...m} : {id:uid(), date:date||today(), fin:"", c:"CA", h:8, kind:"absence", moment:"jour", statut: (date||today()) > today() ? "hypo" : "", note:""};
+  const f = $("#mform");
+  const draw = () => {
+    const abs = m.kind==="absence";
+    f.innerHTML = `<h2>${isNew?"Ajouter":"Modifier"}</h2>
+      <label>Type</label>
+      <div class="seg" id="fkind">${Object.entries(KIND).map(([k,l])=>`<button type="button" data-v="${k}" aria-pressed="${m.kind===k}">${l}</button>`).join("")}</div>
+      <label>Compteur</label>
+      <div class="seg" id="fc">${KEYS.map(k=>`<button type="button" data-v="${k}" aria-pressed="${m.c===k}" style="${colorVars(k)}">${C[k].short}</button>`).join("")}</div>
+      ${abs ? `<label>Statut</label>
+      <div class="seg" id="fst"><button type="button" data-v="" aria-pressed="${m.statut!=="hypo"}">Posé dans PGI</button><button type="button" data-v="hypo" aria-pressed="${m.statut==="hypo"}">Hypothèse</button></div>` : ""}
+      <div class="row">
+        <div><label for="fdate">${abs?"Du":"Date"}</label><input type="date" id="fdate" value="${m.date}"></div>
+        ${abs ? `<div><label for="ffin">Au (facultatif)</label><input type="date" id="ffin" value="${m.fin||m.date}" min="${m.date}"></div>` : ""}
+      </div>
+      ${abs && C[m.c].u!=="j" ? `<div class="seg" id="fmom" style="margin-top:10px;${m.fin && m.fin>m.date ? "display:none" : ""}">${Object.entries(MOM).map(([k,l])=>`<button type="button" data-v="${k}" aria-pressed="${(m.moment||"jour")===k}">${l}</button>`).join("")}</div>` : ""}
+      ${abs && C[m.c].u!=="j" ? `<div class="row" id="fheures" style="${m.moment==="heures" && !(m.fin && m.fin>m.date) ? "" : "display:none"}"><div><label for="fde">De</label><input type="time" id="fde" value="${m.de||"15:00"}" step="900"></div><div><label for="fa">À</label><input type="time" id="fa" value="${m.a||"16:30"}" step="900"></div></div>` : ""}
+      <label for="fh">${C[m.c].u==="j"?"Jours":"Heures"}</label><input id="fh" inputmode="decimal" value="${fmt(m.h)}">
+      <p class="warn" id="fwarn" ${abs && astConflict(m) ? "" : "hidden"}>Attention : cette absence tombe pendant une astreinte.</p>
+      <label for="fnote">Note</label><textarea id="fnote" placeholder="facultatif">${esc(m.note)}</textarea>
+      <div class="actions">
+        ${isNew?"":`<button type="button" class="btn danger" id="fdel">Supprimer</button>`}
+        <button type="button" class="btn ghost" id="fcancel">Annuler</button>
+        <button type="button" class="btn" id="fok">${isNew?"Ajouter":"Enregistrer"}</button>
+      </div>`;
+    const keep = () => { m.date=$("#fdate").value; const fi=$("#ffin"); m.fin = fi ? fi.value : ""; m.h=num($("#fh").value); m.note=$("#fnote").value;
+      const de=$("#fde"), aa=$("#fa"); if (de){ m.de=de.value; m.a=aa.value; } };
+    const redo = fn => () => { keep(); fn(); draw(); };
+    f.querySelectorAll("#fkind button").forEach(b=>b.onclick=redo(()=>{ m.kind=b.dataset.v; }));
+    f.querySelectorAll("#fc button").forEach(b=>b.onclick=redo(()=>{ m.c=b.dataset.v; autoHours(m); }));
+    f.querySelectorAll("#fst button").forEach(b=>b.onclick=redo(()=>{ m.statut=b.dataset.v; }));
+    f.querySelectorAll("#fmom button").forEach(b=>b.onclick=redo(()=>{ m.moment=b.dataset.v; autoHours(m); }));
+    const refresh = () => {
+      $("#fh").value = fmt(m.h);
+      const mo = $("#fmom"); if (mo) mo.style.display = (m.fin && m.fin > m.date) ? "none" : "";
+      const fhr = $("#fheures"); if (fhr) fhr.style.display = (m.moment==="heures" && !(m.fin && m.fin > m.date)) ? "" : "none";
+      const w = $("#fwarn"); if (w) w.hidden = !(m.kind==="absence" && astConflict(m));
+    };
+    // Pas de ré-affichage du formulaire sur les dates : sinon le calendrier iOS se referme
+    $("#fdate").onchange = () => { keep(); const fi = $("#ffin");
+      if (fi){ fi.min = m.date; if (!m.fin || m.fin < m.date){ m.fin = m.date; fi.value = m.date; } }
+      autoHours(m); refresh(); };
+    const fi = $("#ffin"); if (fi) fi.onchange = () => { keep();
+      if (m.fin && m.fin > m.date){ m.moment = "jour"; f.querySelectorAll("#fmom button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.v==="jour")); }
+      autoHours(m); refresh(); };
+    ["#fde","#fa"].forEach(id=>{ const el = $(id); if (el) el.onchange = () => { keep(); autoHours(m); refresh(); }; });
+    $("#fcancel").onclick=()=>$("#dlg").close();
+    $("#fok").onclick=()=>{ keep(); if(!m.date||!(m.h>0)) return;
+      if (m.kind!=="absence"){ delete m.fin; delete m.moment; delete m.statut; }
+      if (!m.fin || m.fin<=m.date) delete m.fin;
+      if (m.moment!=="heures" || m.fin){ delete m.de; delete m.a; if (m.moment==="heures") m.moment="jour"; }
+      if (!m.statut) delete m.statut;
+      state.mouvements = state.mouvements.filter(x=>x.id!==m.id).concat(m); save(); $("#dlg").close(); render(); };
+    const d = $("#fdel"); if (d) d.onclick=()=>{ state.mouvements = state.mouvements.filter(x=>x.id!==m.id); save(); $("#dlg").close(); render(); };
+  };
+  draw();
+  $("#dlg").showModal();
+}
+
+function render(){
+  renderTop();
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===tab));
+  $("#fab").style.display = (tab==="plan"||tab==="annee") ? "" : "none";
+  const v = $("#view");
+  if (tab==="plan"){
+    v.innerHTML = renderSol() + renderPlan();
+    v.querySelectorAll("[data-sol]").forEach(b=>b.onclick=()=>openSol(b.dataset.sol));
+    v.querySelectorAll(".item[data-id]").forEach(b=>b.onclick=()=>{ const id=b.dataset.id;
+      if (id.startsWith("sol-")) return openSol(id.slice(4));
+      if (id.startsWith("dr-")) return openDroits();
+      openForm(state.mouvements.find(m=>m.id===id)); });
+  } else if (tab==="annee"){
+    v.innerHTML = renderAnnee();
+    v.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>openDay(b.dataset.day));
+  } else if (tab==="ast"){
+    v.innerHTML = renderAst();
+    $("#astDeb").oninput = e => { const x = e.target.value; $("#astInfo").innerHTML = x ? astInfoText(x) : "La fin est calculée automatiquement : le jeudi suivant à 17 h."; };
+    $("#astAdd").onclick = () => { const x = $("#astDeb").value; if (!x) return;
+      state.astreintes = (state.astreintes||[]).concat({id:uid(), debut:x, fin:addDays(x,7)}); save(); render(); };
+    v.querySelectorAll("[data-dela]").forEach(b=>b.onclick=()=>{ state.astreintes = state.astreintes.filter(a=>a.id!==b.dataset.dela); save(); render(); });
+  } else if (tab==="aide"){
+    v.innerHTML = renderAide();
+  } else if (tab==="set"){
+    v.innerHTML = renderSet();
+    const stamp = () => new Date().toISOString().slice(0,10);
+    $("#expJson").onclick = () => { state.lastExport = new Date().toISOString(); save();
+      download(`mes-conges-sauvegarde-${stamp()}.json`, JSON.stringify(state, null, 1), "application/json"); render(); };
+    $("#expCsv").onclick = () => download(`mes-conges-${stamp()}.csv`, toCSV(), "text/csv;charset=utf-8");
+    $("#impJson").onclick = () => $("#impFile").click();
+    $("#impFile").onchange = async e => { const f = e.target.files[0]; if (!f) return;
+      try { const d = JSON.parse(await f.text()); if (!d.releves || !d.mouvements) throw 0;
+        if (!confirm("Remplacer toutes les données de cet appareil par cette sauvegarde ?")) return;
+        state = normalize(d); save(); render(); }
+      catch(err){ $("#setMsg").textContent = "Ce fichier n’est pas une sauvegarde PGI suivi perso."; } };
+    $("#setDroits").onclick = openDroits;
+    $("#vAdd").onclick = () => { const n=$("#vN").value.trim(), d=$("#vD").value, f=$("#vF").value;
+      if (!d || !f || f<d) return; state.vacances = state.vacances.concat({id:uid(), n:n||"Vacances", debut:d, fin:f}); save(); render(); };
+    v.querySelectorAll("[data-delv]").forEach(b=>b.onclick=()=>{ if (!confirm("Supprimer cette période ?")) return;
+      state.vacances = state.vacances.filter(x=>x.id!==b.dataset.delv); save(); render(); });
+  } else {
+    v.innerHTML = renderReleve() + `<div class="month">Historique ${calYear}</div>` + renderHist();
+    v.querySelectorAll("[data-delr]").forEach(b=>b.onclick=()=>{
+      if (!confirm("Supprimer ce relevé ?")) return;
+      state.releves = state.releves.filter(r=>r.date!==b.dataset.delr); save(); render();});
+    v.querySelectorAll("input").forEach(i=>i.oninput=releveCompare); releveCompare();
+    $("#rsave").onclick = () => {
+      const date = $("#rdate").value; if (!date) return;
+      const soldes = {}; let any = false;
+      for (const k of KEYS){ const x = rv(k); if (x!=="") any = true; soldes[k] = x===""?0:num(x); }
+      soldes.RCd = Object.fromEntries(RCT.map(([t])=>[t, num($("#r_RC_"+t).value)]));
+      if (!any){ $("#rcmp").insertAdjacentHTML("beforeend",`<p class="hint">Saisissez au moins un solde.</p>`); return; }
+      state.releves = state.releves.filter(r=>r.date!==date).concat({date, soldes});
+      save(); render();
+    };
+  }
+}
+
+function save(){
+  try { localStorage.setItem("conges-state", JSON.stringify(state)); $("#status").textContent = statusText(); }
+  catch(e){ $("#status").textContent = "Échec de l’enregistrement sur cet appareil."; }
+}
+function statusText(){
+  const d = state.lastExport;
+  if (!d) return "Données enregistrées sur cet iPhone. Pensez à exporter une sauvegarde (Réglages).";
+  const days = Math.floor((Date.now() - new Date(d).getTime())/864e5);
+  return days > 31 ? `Dernière sauvegarde il y a ${days} jours : exportez-en une nouvelle (Réglages).` : `Dernière sauvegarde : ${flong(d.slice(0,10))}.`;
+}
+const normalize = d => ({releves:d.releves||[], mouvements:d.mouvements||[], solidarite:d.solidarite||{}, astreintes:d.astreintes||[],
+  vacances: (d.vacances && d.vacances.length) ? d.vacances : DEFAULT_VAC.map(v=>({...v, id:uid()})),
+  ...(d.droits?{droits:d.droits}:{}), ...(d.lastExport?{lastExport:d.lastExport}:{})});
+
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+$("#fab").onclick=()=>openForm(null);
+$("#dlg").addEventListener("click", e=>{ if(e.target.id==="dlg") $("#dlg").close(); });
+
+let loaded = null;
+try { loaded = JSON.parse(localStorage.getItem("conges-state")||"null"); } catch(e){}
+state = normalize(loaded || SEED);
+if (!loaded) save();
+render();
+$("#status").textContent = statusText();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
