@@ -460,15 +460,30 @@ function renderBilan(y){
       if (m.c!==k || m.kind==="credit" || m.date<a || m.date>b) continue;
       if (m.statut==="hypo") hypo += m.h; else pose += m.h;
     }
-    const reste = k==="RC" ? soldeAt("RC", `${y}-12-31`) : d[k] - pose - hypo;
+    // CA : reliquat de la période précédente (solde au 30/04) + droits ; reste = solde prévu au 30/04 suivant
+    const rel = k==="CA" ? (soldeAt("CA", `${y}-04-30`) ?? 0) : 0;
+    const reste = k==="RC" ? soldeAt("RC", `${y}-12-31`)
+      : k==="CA" ? (soldeAt("CA", `${y+1}-04-30`) ?? d.CA + rel - pose - hypo)
+      : d[k] - pose - hypo;
+    const drCell = k==="RC" ? "–" : k==="CA" && Math.abs(rel)>=0.01 ? `${fmt(d.CA)}<div class="n" style="font-size:.72rem;color:var(--muted)">+ ${fmt(rel)} reliquat</div>` : fmt(d[k]);
     return `<tr><td><span class="chip" style="${colorVars(k)};min-width:0;padding:2px 6px">${C[k].short}</span></td>
-      <td>${k==="RC"?"–":fmt(d[k])}</td><td>${fmt(pose)}</td><td>${hypo?fmt(hypo):"–"}</td>
+      <td>${drCell}</td><td>${fmt(pose)}</td><td>${hypo?fmt(hypo):"–"}</td>
       <td class="${reste!==null&&reste<0?"bad":""}" style="font-weight:700">${reste===null?"–":fmt(reste)}</td></tr>`;
   }).join("");
   return `<div class="card" style="padding:12px 14px;margin:8px 0">
     <table class="cmp" style="margin-top:0"><thead><tr><th>Bilan ${y}</th><th>Droits</th><th>Posé</th><th>Hypo.</th><th>Reste</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="hint">Posé inclut le CET. CA : du 1er mai ${y} au 30 avril ${y+1}. RC : reste = solde prévu au 31/12 (pas de droit fixe). FL en jours.</p>
+    ${caCapLine(y)}
+    <p class="hint">Posé inclut le CET. CA : du 1er mai ${y} au 30 avril ${y+1}, reliquat de la période précédente compris. RC : reste = solde prévu au 31/12 (pas de droit fixe). FL en jours.</p>
     <button class="toggle" id="editDroits">Régler les droits annuels</button></div>`;
+}
+const capCA = () => state.capCA ?? 70;
+function caCapLine(y){
+  const v = soldeAt("CA", `${y}-12-31`);
+  if (v===null) return "";
+  const cap = capCA(), over = v - cap;
+  return over > 0.009
+    ? `<p class="warn" style="margin:8px 0 0">Reliquat CA prévu au 31/12/${y} : ${fmt(v)} h, soit ${fmt(over)} h au-delà du maximum de ${fmt(cap)} h. À poser ou à verser au CET avant le 31/12.</p>`
+    : `<p class="hint" style="margin:8px 0 0">Reliquat CA prévu au 31/12/${y} : <b>${fmt(v)} h</b> (maximum ${fmt(cap)} h).</p>`;
 }
 function openDroits(){
   const d = droits(), f = $("#mform");
@@ -477,9 +492,10 @@ function openDroits(){
     <label for="dRTT">RD : heures au 1er janvier</label><input id="dRTT" inputmode="decimal" value="${fmt(d.RTT)}">
     <label for="dCA">CA : heures au 1er mai</label><input id="dCA" inputmode="decimal" value="${fmt(d.CA)}">
     <label for="dFL">FL : jours au 1er janvier</label><input id="dFL" inputmode="decimal" value="${fmt(d.FL)}">
+    <label for="dCap">CA : reliquat maximum gardé au 31/12 (h)</label><input id="dCap" inputmode="decimal" value="${fmt(capCA())}">
     <div class="actions"><button type="button" class="btn ghost" id="drCancel">Annuler</button><button type="button" class="btn" id="drOk">Enregistrer</button></div>`;
   $("#drCancel").onclick=()=>$("#dlg").close();
-  $("#drOk").onclick=()=>{ state.droits = {RTT:num($("#dRTT").value), CA:num($("#dCA").value), FL:num($("#dFL").value)}; save(); $("#dlg").close(); render(); };
+  $("#drOk").onclick=()=>{ state.droits = {RTT:num($("#dRTT").value), CA:num($("#dCA").value), FL:num($("#dFL").value)}; state.capCA = num($("#dCap").value); save(); $("#dlg").close(); render(); };
   $("#dlg").showModal();
 }
 
@@ -612,7 +628,7 @@ function renderAide(){
 <ul>
 <li><b>PGI</b> ne déduit une absence qu’une fois la date passée ; l’appli la déduit dès qu’elle est posée. Le solde PGI « à la date du » inclut ce jour-là.</li>
 <li><b>Contrôle</b> : attendu = relevé précédent − absences posées + acquisitions entre les deux dates. Les hypothèses ne comptent jamais.</li>
-<li><b>Bilan</b> : Droits − Posé (CET compris) − Hypothèses = Reste. CA sur la période 1er mai → 30 avril. RC : pas de droit fixe, « Reste » = solde prévu au 31/12. FL en jours.</li>
+<li><b>Bilan</b> : Droits − Posé (CET compris) − Hypothèses = Reste. CA sur la période 1er mai → 30 avril, avec le reliquat de la période précédente ajouté aux droits. Le reliquat CA prévu au 31/12 est comparé au maximum (70 h, modifiable dans Réglages) : au-delà, alerte. RC : pas de droit fixe, « Reste » = solde prévu au 31/12. FL en jours.</li>
 <li><b>Astreinte</b> : une absence pendant une astreinte est signalée « pdt astreinte » (sauf le jeudi de début, l’astreinte commençant à 17 h).</li>
 <li><b>Couleurs</b> : ${k("CA","CA")} ${k("RTT","RD")} ${k("RC","RC")} ${k("FL","FL")} ; hachuré = hypothèse ; liseré bleu = vacances ; barre rouge = astreinte ; date en jaune = férié.</li>
 </ul></details>
@@ -881,7 +897,7 @@ function statusText(){
 }
 const normalize = d => ({releves:d.releves||[], mouvements:d.mouvements||[], solidarite:d.solidarite||{}, astreintes:d.astreintes||[],
   vacances: (d.vacances && d.vacances.length) ? d.vacances : DEFAULT_VAC.map(v=>({...v, id:uid()})),
-  ...(d.droits?{droits:d.droits}:{}), ...(d.lastExport?{lastExport:d.lastExport}:{})});
+  ...(d.droits?{droits:d.droits}:{}), ...(d.capCA!=null?{capCA:d.capCA}:{}), ...(d.lastExport?{lastExport:d.lastExport}:{})});
 
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
 $("#fab").onclick=()=>openForm(null);
