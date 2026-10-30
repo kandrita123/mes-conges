@@ -1,0 +1,654 @@
+{
+ "astreintes": [
+  {
+   "debut": "2026-01-01",
+   "fin": "2026-01-08",
+   "id": "a01"
+  },
+  {
+   "debut": "2026-01-22",
+   "fin": "2026-01-29",
+   "id": "a02"
+  },
+  {
+   "debut": "2026-02-12",
+   "fin": "2026-02-19",
+   "id": "a03"
+  },
+  {
+   "debut": "2026-03-19",
+   "fin": "2026-03-26",
+   "id": "a04"
+  },
+  {
+   "debut": "2026-04-09",
+   "fin": "2026-04-16",
+   "id": "a05"
+  },
+  {
+   "debut": "2026-05-14",
+   "fin": "2026-05-21",
+   "id": "a06"
+  },
+  {
+   "debut": "2026-06-11",
+   "fin": "2026-06-18",
+   "id": "a07"
+  },
+  {
+   "debut": "2026-07-16",
+   "fin": "2026-07-23",
+   "id": "a08"
+  },
+  {
+   "debut": "2026-07-30",
+   "fin": "2026-08-06",
+   "id": "a09"
+  },
+  {
+   "debut": "2026-09-03",
+   "fin": "2026-09-10",
+   "id": "a10"
+  },
+  {
+   "debut": "2026-10-15",
+   "fin": "2026-10-22",
+   "id": "a11"
+  },
+  {
+   "debut": "2026-10-29",
+   "fin": "2026-11-05",
+   "id": "a12"
+  },
+  {
+   "debut": "2026-12-03",
+   "fin": "2026-12-10",
+   "id": "a13"
+  },
+  {
+   "debut": "2026-12-17",
+   "fin": "2026-12-24",
+   "id": "a14"
+  },
+  {
+   "debut": "2027-01-21",
+   "fin": "2027-01-28",
+   "id": "fpk33h86"
+  },
+  {
+   "debut": "2027-02-11",
+   "fin": "2027-02-18",
+   "id": "llavoyg0"
+  },
+  {
+   "debut": "2027-03-11",
+   "fin": "2027-03-18",
+   "id": "4u38u8mn"
+  },
+  {
+   "debut": "2027-04-08",
+   "fin": "2027-04-15",
+   "id": "z6tl1ct3"
+  },
+  {
+   "debut": "2027-05-06",
+   "fin": "2027-05-13",
+   "id": "05d78xxg"
+  },
+  {
+   "debut": "2027-06-03",
+   "fin": "2027-06-10",
+   "id": "keq0uhwj"
+  },
+  {
+   "debut": "2027-07-15",
+   "fin": "2027-07-22",
+   "id": "eeyzjqis"
+  },
+  {
+   "debut": "2027-07-29",
+   "fin": "2027-08-05",
+   "id": "f7lxc1p0"
+  },
+  {
+   "debut": "2027-09-02",
+   "fin": "2027-09-09",
+   "id": "seo21yqj"
+  },
+  {
+   "debut": "2027-09-23",
+   "fin": "2027-09-30",
+   "id": "1ee30glb"
+  },
+  {
+   "debut": "2027-10-21",
+   "fin": "2027-10-28",
+   "id": "da02bxvt"
+  },
+  {
+   "debut": "2027-11-18",
+   "fin": "2027-11-25",
+   "id": "3q7rnsc5"
+  },
+  {
+   "debut": "2027-12-16",
+   "fin": "2027-12-23",
+   "id": "mfw3wuo0"
+  }
+ ],
+ "mouvements": [
+  {
+   "c": "CA",
+   "date": "2026-01-13",
+   "h": 1,
+   "id": "c1",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "CA",
+   "date": "2026-02-17",
+   "h": 1,
+   "id": "c2",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "CA",
+   "date": "2026-04-27",
+   "fin": "2026-04-29",
+   "h": 24,
+   "id": "c3",
+   "kind": "absence",
+   "note": "Du 27 au 29/04"
+  },
+  {
+   "c": "CA",
+   "date": "2026-04-30",
+   "h": 4.25,
+   "id": "c4",
+   "kind": "absence",
+   "moment": "am",
+   "note": "Matin"
+  },
+  {
+   "c": "CA",
+   "date": "2026-04-30",
+   "h": 2.25,
+   "id": "c5",
+   "kind": "absence",
+   "moment": "pm",
+   "note": "Après-midi"
+  },
+  {
+   "c": "CA",
+   "date": "2026-05-01",
+   "h": 189,
+   "id": "c6",
+   "kind": "credit",
+   "note": "Droits CA de l’année (déduits des soldes PGI)"
+  },
+  {
+   "c": "CA",
+   "date": "2026-08-14",
+   "fin": "2026-08-28",
+   "h": 88,
+   "id": "c7",
+   "kind": "absence",
+   "note": "Du 14 au 28/08"
+  },
+  {
+   "c": "CA",
+   "date": "2026-10-21",
+   "h": 3.5,
+   "id": "c8",
+   "kind": "absence",
+   "moment": "pm",
+   "note": "Après-midi"
+  },
+  {
+   "c": "CA",
+   "date": "2026-12-03",
+   "h": 8,
+   "id": "c9",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "CA",
+   "date": "2026-12-31",
+   "h": 8,
+   "id": "c10",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "CA",
+   "date": "2026-12-31",
+   "h": 49,
+   "id": "c11",
+   "kind": "cet",
+   "note": "Versement CET annuel"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-01-16",
+   "h": 8,
+   "id": "r1",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-02-05",
+   "fin": "2026-02-06",
+   "h": 16,
+   "id": "r2",
+   "kind": "absence",
+   "note": "Du 5 au 6/02"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-03-05",
+   "fin": "2026-03-06",
+   "h": 16,
+   "id": "r3",
+   "kind": "absence",
+   "note": "Du 5 au 6/03"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-05-04",
+   "h": 8,
+   "id": "r4",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-05-11",
+   "h": 8,
+   "id": "r5",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-05-27",
+   "h": 3,
+   "id": "r6",
+   "kind": "absence",
+   "moment": "pm",
+   "note": "13h30-16h30"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-06-05",
+   "h": 8,
+   "id": "r7",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-06-24",
+   "h": 8,
+   "id": "r8",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-06-25",
+   "h": 8,
+   "id": "r9",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-06-26",
+   "h": 1,
+   "id": "r10",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-07-03",
+   "h": 4,
+   "id": "r11",
+   "kind": "absence",
+   "moment": "am",
+   "note": "7h45-11h45"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-07-09",
+   "fin": "2026-07-13",
+   "h": 24,
+   "id": "r12",
+   "kind": "absence",
+   "note": "Du 9 au 13/07"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-07-24",
+   "h": 8,
+   "id": "r13",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-07-30",
+   "h": 8,
+   "id": "r14",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-08-07",
+   "h": 8,
+   "id": "r15",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-08-10",
+   "h": 8,
+   "id": "r16",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-08-31",
+   "h": 8,
+   "id": "r17",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2026-09-01",
+   "h": 6,
+   "id": "r18",
+   "kind": "absence",
+   "note": "Rentrée scolaire le matin (RS 2 h)"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-09-02",
+   "fin": "2026-09-03",
+   "h": 16,
+   "id": "r19",
+   "kind": "absence",
+   "note": "Du 2 au 3/09"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-10-05",
+   "h": 4,
+   "id": "r20",
+   "kind": "absence",
+   "moment": "am",
+   "note": "Matin"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-10-26",
+   "fin": "2026-10-28",
+   "h": 24,
+   "id": "r21",
+   "kind": "absence",
+   "note": "Du 26 au 28/10"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-11-12",
+   "fin": "2026-11-13",
+   "h": 16,
+   "id": "r22",
+   "kind": "absence",
+   "note": "Du 12 au 13/11"
+  },
+  {
+   "c": "RC",
+   "date": "2026-12-28",
+   "fin": "2026-12-29",
+   "h": 16,
+   "id": "r23",
+   "kind": "absence",
+   "note": "Du 28 au 29/12"
+  },
+  {
+   "c": "RTT",
+   "date": "2026-12-31",
+   "h": 42,
+   "id": "r24",
+   "kind": "cet",
+   "note": "Versement CET annuel"
+  },
+  {
+   "c": "RC",
+   "date": "2026-02-10",
+   "h": 1,
+   "id": "k1",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-03-27",
+   "h": 8,
+   "id": "k2",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-04-30",
+   "h": 1.5,
+   "id": "k3",
+   "kind": "absence",
+   "moment": "pm",
+   "note": "15h-16h30"
+  },
+  {
+   "c": "RC",
+   "date": "2026-05-28",
+   "h": 3,
+   "id": "k4",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-06-02",
+   "h": 1,
+   "id": "k5",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-07-21",
+   "h": 3,
+   "id": "k6",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-07-28",
+   "h": 1,
+   "id": "k7",
+   "kind": "absence",
+   "moment": "pm",
+   "note": ""
+  },
+  {
+   "c": "RC",
+   "date": "2026-08-31",
+   "h": 81.47,
+   "id": "k8",
+   "kind": "credit",
+   "note": "RC d’astreinte acquis entre mai et août (déduit des soldes PGI, dates réelles inconnues)"
+  },
+  {
+   "c": "RC",
+   "date": "2026-09-21",
+   "fin": "2026-09-25",
+   "h": 40,
+   "id": "k9",
+   "kind": "absence",
+   "note": "Du 21 au 25/09"
+  },
+  {
+   "c": "RC",
+   "date": "2026-11-02",
+   "h": 3,
+   "id": "k10",
+   "kind": "absence",
+   "moment": "am",
+   "note": "7h45-10h45"
+  },
+  {
+   "c": "RC",
+   "date": "2026-12-30",
+   "h": 8,
+   "id": "k11",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "FL",
+   "date": "2026-02-27",
+   "h": 1,
+   "id": "f1",
+   "kind": "absence",
+   "note": ""
+  },
+  {
+   "c": "RTT",
+   "date": "2027-12-24",
+   "h": 8,
+   "id": "w8k2zutz",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  },
+  {
+   "c": "CA",
+   "date": "2027-12-27",
+   "fin": "2027-12-31",
+   "h": 40,
+   "id": "h3m8rv5v",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  },
+  {
+   "c": "RTT",
+   "date": "2027-11-12",
+   "h": 8,
+   "id": "pk50bwnb",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  },
+  {
+   "c": "RTT",
+   "date": "2027-07-12",
+   "h": 8,
+   "id": "8q3wrs87",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  },
+  {
+   "c": "RTT",
+   "date": "2027-07-13",
+   "h": 8,
+   "id": "bx3lislu",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  },
+  {
+   "c": "CA",
+   "date": "2027-06-24",
+   "fin": "2027-06-25",
+   "h": 16,
+   "id": "8n3vzhtq",
+   "kind": "absence",
+   "moment": "jour",
+   "note": "",
+   "statut": "hypo"
+  }
+ ],
+ "releves": [
+  {
+   "date": "2026-01-01",
+   "soldes": {
+    "CA": 32.75,
+    "FL": 1,
+    "RC": 63.06,
+    "RI": 12,
+    "RTT": 260
+   }
+  },
+  {
+   "date": "2026-05-01",
+   "soldes": {
+    "CA": 189.25,
+    "FL": 0,
+    "RC": 45.56,
+    "RI": 12,
+    "RTT": 220
+   }
+  },
+  {
+   "date": "2026-09-01",
+   "soldes": {
+    "CA": 101.25,
+    "FL": 0,
+    "RC": 119.03,
+    "RI": 12,
+    "RTT": 102
+   }
+  },
+  {
+   "date": "2026-10-30",
+   "soldes": {
+    "CA": 97.75,
+    "FL": 0,
+    "RC": 79.03,
+    "RI": 12,
+    "RTT": 58
+   }
+  }
+ ],
+ "solidarite": {
+  "2026": {
+   "c": "RC",
+   "date": "2026-01-16",
+   "mode": "off"
+  }
+ }
+}
