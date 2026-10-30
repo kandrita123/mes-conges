@@ -157,6 +157,10 @@ dialog h2{margin:0 0 4px;font-size:1.2rem}
 .aide p,.aide li{font-size:.92rem;line-height:1.5}
 .aide ol,.aide ul{padding-left:20px;margin:6px 0}
 .aide .key{display:inline-block;padding:1px 7px;border-radius:6px;font-weight:700;font-size:.82rem}
+.btn.ghost,:root .btn.ghost{color:var(--ink)}
+.btn.danger,:root .btn.danger{color:var(--neg)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.ghost{color:var(--ink)}:root:not([data-theme="light"]) .btn.danger{color:var(--neg)}}
+:root[data-theme="dark"] .btn.ghost{color:var(--ink)}:root[data-theme="dark"] .btn.danger{color:var(--neg)}
 </style>
 </head>
 <body>
@@ -377,7 +381,7 @@ function dayItems(s){
     if (fin !== m.date && !isWork(s)) continue;
     const wd = fin===m.date ? 1 : Math.max(1, workDays(m.date, fin));
     const perDay = C[m.c].u==="j" ? 8 : m.h / wd;
-    let place = m.moment==="am" ? "am" : m.moment==="pm" ? "pm" : m.moment==="heures" && m.de ? (toMin(m.a)<=720 ? "am" : toMin(m.de)>=720 ? "pm" : perDay >= 6 ? "full" : "part") : perDay >= 6 ? "full" : "part";
+    let place = m.moment==="am" ? "am" : m.moment==="pm" ? "pm" : m.moment==="heures" && m.de ? (perDay >= 6 ? "full" : (Math.max(0, Math.min(toMin(m.a),720) - toMin(m.de)) >= Math.max(0, toMin(m.a) - Math.max(toMin(m.de),765)) ? "am" : "pm")) : perDay >= 6 ? "full" : "part";
     out.push({m, place});
   }
   return out;
@@ -401,6 +405,7 @@ function dayCell(s){
   if (slots.am) inner += half(slots.am, "am");
   if (slots.pm) inner += half(slots.pm, "pm");
   if (part && !slots.pm) inner += half(part, "part");
+  else if (part && !slots.am) inner += half(part, "am");
   return `<button class="${cls.join(" ")}" data-day="${s}"><span class="n">${+s.slice(8)}</span>${isFerie(s)?`<span class="f">férié</span>`:""}${inner}</button>`;
 }
 function renderAnnee(){
