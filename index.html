@@ -161,6 +161,12 @@ dialog h2{margin:0 0 4px;font-size:1.2rem}
 .btn.danger,:root .btn.danger{color:var(--neg)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.ghost{color:var(--ink)}:root:not([data-theme="light"]) .btn.danger{color:var(--neg)}}
 :root[data-theme="dark"] .btn.ghost{color:var(--ink)}:root[data-theme="dark"] .btn.danger{color:var(--neg)}
+.past{margin:10px 0 4px}
+.past>summary{cursor:pointer;font-weight:700;font-size:.92rem;color:var(--accent);padding:10px 12px;background:var(--surface);border-radius:10px;list-style:none}
+.past>summary::-webkit-details-marker{display:none}
+.past>summary::before{content:"▸ ";}
+.past[open]>summary::before{content:"▾ ";}
+.past[open]{padding-bottom:8px;border-bottom:1px dashed var(--line)}
 </style>
 </head>
 <body>
@@ -224,6 +230,7 @@ const SOL = {off:"Jour non travaillé", worked:"Jour travaillé, 7 h posées", c
 
 const SEED = {releves:[], mouvements:[]};
 let state = {releves:[], mouvements:[], solidarite:{}, astreintes:[], vacances:[]};
+let pastOpen = false;
 let tab = "annee", view = "reel", showPast = false, store = null, saveTimer = null, calYear = new Date().getFullYear();
 
 const $ = s => document.querySelector(s);
@@ -418,15 +425,25 @@ function renderAnnee(){
       <span style="color:#E0A800;font-weight:700">Férié</span>
     </div>`;
   const dn = ["L","M","M","J","V","S","D"];
-  for (let mo=1; mo<=12; mo++){
+  const monthHTML = mo => {
     const first = `${y}-${pad(mo)}-01`;
     const nb = new Date(Date.UTC(y, mo, 0)).getUTCDate();
     const lead = (dow(first)+6)%7;
-    html += `<div class="month" id="m${mo}">${new Date(first+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</div><div class="cal">${dn.map(d=>`<div class="dow">${d}</div>`).join("")}`;
-    for (let i=0;i<lead;i++) html += `<span class="day blank"></span>`;
-    for (let d=1; d<=nb; d++) html += dayCell(`${y}-${pad(mo)}-${pad(d)}`);
-    html += `</div>`;
+    let h = `<div class="month" id="m${mo}">${new Date(first+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</div><div class="cal">${dn.map(d=>`<div class="dow">${d}</div>`).join("")}`;
+    for (let i=0;i<lead;i++) h += `<span class="day blank"></span>`;
+    for (let d=1; d<=nb; d++) h += dayCell(`${y}-${pad(mo)}-${pad(d)}`);
+    return h + `</div>`;
+  };
+  // Année en cours : les mois écoulés sont repliés dans un menu
+  const now = new Date(), curM = now.getMonth()+1;
+  const nbPast = y === now.getFullYear() ? curM - 1 : 0;
+  if (nbPast > 0){
+    const nom = mo => new Date(`${y}-${pad(mo)}-15T12:00:00`).toLocaleDateString("fr-FR",{month:"long"});
+    html += `<details class="past" id="pastMonths" ${pastOpen?"open":""}><summary>Mois passés (${nbPast===1 ? nom(1) : `${nom(1)} à ${nom(nbPast)}`})</summary>`;
+    for (let mo=1; mo<=nbPast; mo++) html += monthHTML(mo);
+    html += `</details>`;
   }
+  for (let mo=nbPast+1; mo<=12; mo++) html += monthHTML(mo);
   return html;
 }
 
@@ -953,6 +970,7 @@ function render(){
   } else if (tab==="annee"){
     v.innerHTML = renderAnnee();
     v.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>openDay(b.dataset.day));
+    const pm = $("#pastMonths"); if (pm) pm.ontoggle = () => { pastOpen = pm.open; };
   } else if (tab==="ast"){
     v.innerHTML = renderAst();
     $("#astDeb").oninput = e => { const x = e.target.value; $("#astInfo").innerHTML = x ? astInfoText(x) : "La fin est calculée automatiquement : le jeudi suivant à 17 h."; };
