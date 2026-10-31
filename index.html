@@ -400,19 +400,43 @@ function dayCell(s){
   if (vacMark(s)) cls.push("vac");
   if (astOn(s)) cls.push("ast");
   if (s===today()) cls.push("today");
-  const slots = {am:null, pm:null}; let part = null;
-  for (const {m, place} of dayItems(s)){
-    if (place==="full"){ if (!slots.am && !slots.pm){ slots.am = slots.pm = m; } else if (!slots.am) slots.am = m; else if (!slots.pm || slots.pm===slots.am) slots.pm = m; }
-    else if (place==="am"){ if (!slots.am) slots.am = m; else if (!slots.pm) slots.pm = m; }
-    else if (place==="pm"){ if (!slots.pm || slots.pm===slots.am) slots.pm = m; else if (!slots.am) slots.am = m; }
-    else if (!part) part = m;
+  const its = dayItems(s);
+  // Journée de référence 7h45-12h / 12h45-16h30 = 480 min de travail, du haut (7h45) au bas (16h30) de la case
+  const toW = t => { const m = toMin(t); const w = m <= 720 ? m - 465 : m < 765 ? 255 : m - 510; return Math.min(480, Math.max(0, w)); };
+  const hDay = ({m}) => { const fin = m.fin || m.date; const wd = fin===m.date ? 1 : Math.max(1, workDays(m.date, fin)); return C[m.c].u==="j" ? 8 : m.h / wd; };
+  const iv = its.map(x => {
+    const {m, place} = x, len = Math.min(480, hDay(x)*60);
+    if (m.moment==="heures" && m.de) return {m, a:toW(m.de), b:toW(m.a)};
+    if (place==="am") return {m, a:0, b:255};
+    if (place==="pm") return {m, a:255, b:480};
+    if (place==="full") return {m, a:0, b:480};
+    return {m, a:null, len};
+  });
+  // Plages connues : positionnées à leur heure ; sans heure : placées à la suite, en bas
+  let ok = iv.reduce((t,v)=>t + (v.a===null ? v.len : v.b - v.a), 0) <= 481;
+  const known = iv.filter(v=>v.a!==null).sort((x,y)=>x.a-y.a);
+  for (let i=1; i<known.length && ok; i++) if (known[i].a < known[i-1].b - 1) ok = false;
+  if (ok){
+    let cur = 480;
+    for (const v of iv.filter(v=>v.a===null).reverse()){ v.b = cur; v.a = cur - v.len; cur = v.a; }
+    if (iv.some(v=>v.a < -1) || (known.length && iv.some(v=>!known.includes(v) && v.a < Math.max(...known.map(k=>k.b)) - 1))) ok = false;
   }
-  let inner = "";
-  const half = (m, pos) => `<span class="half ${pos} ${m.statut==="hypo"?"hypo":""}" style="${colorVars(m.c)}"></span>`;
-  if (slots.am) inner += half(slots.am, "am");
-  if (slots.pm) inner += half(slots.pm, "pm");
-  if (part && !slots.pm) inner += half(part, "part");
-  else if (part && !slots.am) inner += half(part, "am");
+  // Journée entièrement posée (du début à la fin, ou 7,5 h et plus) : bandes collées, sans vide de pause
+  const totH = iv.reduce((t,v)=>t + hDay({m:v.m}), 0);
+  if (ok && iv.length >= 2 && (totH >= 7.5 || (Math.min(...iv.map(v=>v.a)) <= 15 && Math.max(...iv.map(v=>v.b)) >= 465))) ok = false;
+  if (!ok){
+    // Chevauchement (ex. journée + journée de solidarité) : bandes empilées, proportionnelles aux heures posées
+    const start = v => v.a ?? 999;
+    const sorted = [...iv].sort((x,y)=>start(x)-start(y));
+    const L = v => Math.min(480, hDay({m:v.m})*60);
+    const tot = sorted.reduce((t,v)=>t + L(v), 0) || 1;
+    let pos = 0;
+    for (const v of sorted){ const l = L(v) * 480 / tot; v.a = pos; v.b = pos + l; pos += l; }
+  }
+  const inner = iv.map(v => {
+    const top = v.a / 4.8, h = Math.max(12, (v.b - v.a) / 4.8);
+    return `<span class="half ${v.m.statut==="hypo"?"hypo":""}" style="${colorVars(v.m.c)};top:${Math.min(top, 100-h).toFixed(2)}%;height:${h.toFixed(2)}%"></span>`;
+  }).join("");
   return `<button class="${cls.join(" ")}" data-day="${s}"><span class="n">${+s.slice(8)}</span>${isFerie(s)?`<span class="f">férié</span>`:""}${inner}</button>`;
 }
 function renderAnnee(){
